@@ -1,0 +1,86 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/hanken-grotesk";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.975 0.005 150);
+  --foreground: oklch(0.22 0.025 165);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.025 165);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.025 165);
+  --primary: oklch(0.4 0.09 158);
+  --primary-foreground: oklch(0.98 0.01 150);
+  --secondary: oklch(0.945 0.01 150);
+  --secondary-foreground: oklch(0.3 0.04 160);
+  --muted: oklch(0.945 0.01 150);
+  --muted-foreground: oklch(0.5 0.025 160);
+  --accent: oklch(0.925 0.035 150);
+  --accent-foreground: oklch(0.28 0.06 160);
+  --destructive: oklch(0.56 0.2 27);
+  --border: oklch(0.9 0.012 150);
+  --input: oklch(0.88 0.015 150);
+  --ring: oklch(0.55 0.1 158);
+  --live: oklch(0.6 0.22 27);
+  --card-yellow: oklch(0.86 0.17 92);
+  --sidebar: oklch(0.2 0.03 165);
+  --sidebar-foreground: oklch(0.92 0.02 150);
+  --sidebar-muted: oklch(0.7 0.03 155);
+  --sidebar-accent: oklch(0.28 0.05 160);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-live: var(--live);
+  --color-card-yellow: var(--card-yellow);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

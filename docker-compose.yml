@@ -96,6 +96,14 @@ services:
       - "8080:8080"
     networks: [futhub-net]
 
+  frontend:
+    build: ./frontend
+    depends_on:
+      - main
+    ports:
+      - "5173:80"
+    networks: [futhub-net]
+
   payment:
     profiles: ["apps"]
     build: ./services/payment
