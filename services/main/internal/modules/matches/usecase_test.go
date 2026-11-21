@@ -74,6 +74,37 @@ func (r *inMemoryRepository) ListByChampionship(_ context.Context, championshipI
 	return found, nil
 }
 
+func (r *inMemoryRepository) ListScheduledBetween(_ context.Context, from, to time.Time) ([]entities.Match, error) {
+	found := []entities.Match{}
+	for _, match := range r.matchesByID {
+		isInsideTheWindow := !match.ScheduledAt.Before(from) && match.ScheduledAt.Before(to)
+		if isInsideTheWindow {
+			found = append(found, match)
+		}
+	}
+	sort.Slice(found, func(i, j int) bool { return found[i].ScheduledAt.Before(found[j].ScheduledAt) })
+	return found, nil
+}
+
+func (r *inMemoryRepository) ExistsScheduledFrom(_ context.Context, from time.Time) (bool, error) {
+	for _, match := range r.matchesByID {
+		if !match.ScheduledAt.Before(from) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *inMemoryRepository) ListByStatus(_ context.Context, status entities.MatchStatus) ([]entities.Match, error) {
+	found := []entities.Match{}
+	for _, match := range r.matchesByID {
+		if match.Status == status {
+			found = append(found, match)
+		}
+	}
+	return found, nil
+}
+
 func (r *inMemoryRepository) Reschedule(_ context.Context, id uuid.UUID, scheduledAt, _ time.Time) error {
 	match := r.matchesByID[id]
 	matchIsNotScheduled := match.Status != entities.MatchScheduled
@@ -834,6 +865,56 @@ func TestGetByIDAndListByChampionship(t *testing.T) {
 	}
 	if !errors.Is(unknownChampionshipErr, entities.ErrNotFound) {
 		t.Errorf("an unknown championship must be not found: %v", unknownChampionshipErr)
+	}
+}
+
+func TestListWindowReturnsOnlyTheMatchesOfTheDaysAndSaysIfThereAreLaterOnes(t *testing.T) {
+	env := newTestEnvironment()
+	_, match := env.createMatchIn(t, entities.ChampionshipOpen)
+	windowStart := match.ScheduledAt.AddDate(0, 0, -1)
+
+	insideTheWindow, insideErr := env.useCase.ListWindow(context.Background(), entities.ListMatchesInput{From: windowStart, Days: 3})
+	beforeTheMatch, beforeErr := env.useCase.ListWindow(context.Background(), entities.ListMatchesInput{From: windowStart.AddDate(0, 0, -10), Days: 2})
+	afterTheMatch, afterErr := env.useCase.ListWindow(context.Background(), entities.ListMatchesInput{From: match.ScheduledAt.AddDate(0, 0, 1), Days: 5})
+
+	if insideErr != nil || len(insideTheWindow.Matches) != 1 || insideTheWindow.HasMore {
+		t.Errorf("want the match and nothing later, got %+v (err=%v)", insideTheWindow, insideErr)
+	}
+	if beforeErr != nil || len(beforeTheMatch.Matches) != 0 || !beforeTheMatch.HasMore {
+		t.Errorf("want no matches but a later one, got %+v (err=%v)", beforeTheMatch, beforeErr)
+	}
+	if afterErr != nil || len(afterTheMatch.Matches) != 0 || afterTheMatch.HasMore {
+		t.Errorf("want an empty window with nothing later, got %+v (err=%v)", afterTheMatch, afterErr)
+	}
+	wantedEnd := windowStart.AddDate(0, 0, 3)
+	if !insideTheWindow.To.Equal(wantedEnd) {
+		t.Errorf("window must end %v, got %v", wantedEnd, insideTheWindow.To)
+	}
+}
+
+func TestListWindowRejectsAMissingStartAndInvalidDays(t *testing.T) {
+	env := newTestEnvironment()
+
+	_, missingStartErr := env.useCase.ListWindow(context.Background(), entities.ListMatchesInput{Days: 5})
+	_, zeroDaysErr := env.useCase.ListWindow(context.Background(), entities.ListMatchesInput{From: time.Now(), Days: 0})
+	_, tooManyDaysErr := env.useCase.ListWindow(context.Background(), entities.ListMatchesInput{From: time.Now(), Days: maxWindowDays + 1})
+
+	for name, err := range map[string]error{"missing start": missingStartErr, "zero days": zeroDaysErr, "too many days": tooManyDaysErr} {
+		if !errors.Is(err, entities.ErrInvalidInput) {
+			t.Errorf("%s: want ErrInvalidInput, got %v", name, err)
+		}
+	}
+}
+
+func TestListLiveReturnsOnlyTheMatchesInProgress(t *testing.T) {
+	env := newTestEnvironment()
+	env.createMatchIn(t, entities.ChampionshipOpen)
+	live := env.createLiveMatch(t)
+
+	liveMatches, err := env.useCase.ListLive(context.Background())
+
+	if err != nil || len(liveMatches) != 1 || liveMatches[0].ID != live.ID {
+		t.Errorf("want only the live match, got %+v (err=%v)", liveMatches, err)
 	}
 }
 

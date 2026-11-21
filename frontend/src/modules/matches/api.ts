@@ -1,6 +1,6 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { Match, MatchEvent, MatchEventType } from '@/types'
+import type { Match, MatchEvent, MatchEventType, MatchWindow } from '@/types'
 
 export type CreateMatchInput = {
   championshipId: string
@@ -18,6 +18,29 @@ export type RegisterEventInput = {
 }
 
 const livePollingMs = 4000
+const liveListPollingMs = 10_000
+export const windowDays = 15
+
+export function startOfToday() {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  return start.toISOString()
+}
+
+export const matchWindowsQuery = (firstDay: string) =>
+  infiniteQueryOptions({
+    queryKey: ['matches', 'windows', firstDay],
+    initialPageParam: firstDay,
+    queryFn: ({ pageParam }) =>
+      api<MatchWindow>(`/matches?from=${encodeURIComponent(pageParam)}&days=${windowDays}`),
+    getNextPageParam: (lastWindow) => (lastWindow.hasMore ? lastWindow.to : undefined),
+  })
+
+export const liveMatchesQuery = queryOptions({
+  queryKey: ['matches', 'live'],
+  queryFn: () => api<Match[]>('/matches/live'),
+  refetchInterval: liveListPollingMs,
+})
 
 export const championshipMatchesQuery = (championshipId: string) =>
   queryOptions({

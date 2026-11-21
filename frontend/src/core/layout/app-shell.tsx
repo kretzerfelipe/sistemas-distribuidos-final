@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react'
 import { Link, Outlet, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { LogOutIcon, MailIcon, MenuIcon, ShieldIcon, ShirtIcon, TrophyIcon, UserRoundIcon, UsersIcon } from 'lucide-react'
+import { CalendarDaysIcon, LogOutIcon, MailIcon, MenuIcon, ShieldIcon, ShirtIcon, TrophyIcon, UserRoundIcon, UsersIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { clearSession, useSession } from '@/core/auth/session'
@@ -9,13 +9,14 @@ import { roleLabels } from '@/lib/format'
 import type { Role } from '@/types'
 
 type NavItem = {
-  to: '/championships' | '/teams' | '/player' | '/invitations' | '/users'
+  to: '/games' | '/championships' | '/teams' | '/player' | '/invitations' | '/users'
   label: string
   icon: ComponentType<{ className?: string }>
   roles?: Role[]
 }
 
 const navItems: NavItem[] = [
+  { to: '/games', label: 'Jogos', icon: CalendarDaysIcon },
   { to: '/championships', label: 'Campeonatos', icon: TrophyIcon },
   { to: '/teams', label: 'Times', icon: UsersIcon },
   { to: '/player', label: 'Meu jogador', icon: ShirtIcon, roles: ['USER'] },
@@ -25,7 +26,7 @@ const navItems: NavItem[] = [
 
 function Brand() {
   return (
-    <Link to="/championships" className="flex items-center gap-2.5 px-2">
+    <Link to="/games" className="flex items-center gap-2.5 px-2">
       <span className="grid size-8 place-items-center rounded-lg bg-card-yellow font-heading text-base font-bold text-sidebar">
         F
       </span>

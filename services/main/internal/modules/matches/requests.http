@@ -39,6 +39,14 @@ Authorization: Bearer {{adminToken}}
 GET {{host}}/championships/{{championshipId}}/matches
 Authorization: Bearer {{adminToken}}
 
+### List the matches of the next 15 days (from is optional and defaults to now; hasMore tells if there are later matches)
+GET {{host}}/matches?from=2027-03-01T00:00:00Z&days=15
+Authorization: Bearer {{adminToken}}
+
+### List the matches happening now
+GET {{host}}/matches/live
+Authorization: Bearer {{adminToken}}
+
 ### Reschedule a match (only while scheduled)
 PUT {{host}}/matches/{{matchId}}
 Authorization: Bearer {{adminToken}}

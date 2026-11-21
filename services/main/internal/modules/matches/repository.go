@@ -58,27 +58,49 @@ func (r *postgresRepository) FindByIDForUpdate(ctx context.Context, id uuid.UUID
 }
 
 func (r *postgresRepository) ListByChampionship(ctx context.Context, championshipID uuid.UUID) ([]entities.Match, error) {
+	return r.queryMatches(ctx, "WHERE championship_id = $1", championshipID)
+}
+
+func (r *postgresRepository) ListScheduledBetween(ctx context.Context, from, to time.Time) ([]entities.Match, error) {
+	return r.queryMatches(ctx, "WHERE scheduled_at >= $1 AND scheduled_at < $2", from, to)
+}
+
+func (r *postgresRepository) ListByStatus(ctx context.Context, status entities.MatchStatus) ([]entities.Match, error) {
+	return r.queryMatches(ctx, "WHERE status = $1", string(status))
+}
+
+func (r *postgresRepository) ExistsScheduledFrom(ctx context.Context, from time.Time) (bool, error) {
+	var exists bool
+	err := r.executor(ctx).QueryRow(ctx,
+		"SELECT EXISTS (SELECT 1 FROM matches WHERE scheduled_at >= $1)", from).Scan(&exists)
+	if err != nil {
+		return false, util.SendMessageWithError("repository error checking for later matches", err)
+	}
+	return exists, nil
+}
+
+func (r *postgresRepository) queryMatches(ctx context.Context, condition string, args ...any) ([]entities.Match, error) {
 	rows, err := r.executor(ctx).Query(ctx,
-		"SELECT "+matchColumns+" FROM matches WHERE championship_id = $1 ORDER BY scheduled_at, id", championshipID)
+		"SELECT "+matchColumns+" FROM matches "+condition+" ORDER BY scheduled_at, id", args...)
 	if err != nil {
 		return nil, util.SendMessageWithError("repository error listing matches", err)
 	}
 	defer rows.Close()
 
-	championshipMatches := []entities.Match{}
+	foundMatches := []entities.Match{}
 	for rows.Next() {
 		match, err := scanMatch(rows)
 		if err != nil {
 			return nil, err
 		}
-		championshipMatches = append(championshipMatches, *match)
+		foundMatches = append(foundMatches, *match)
 	}
 
 	err = rows.Err()
 	if err != nil {
 		return nil, util.SendMessageWithError("repository error reading matches", err)
 	}
-	return championshipMatches, nil
+	return foundMatches, nil
 }
 
 func (r *postgresRepository) Reschedule(ctx context.Context, id uuid.UUID, scheduledAt, updatedAt time.Time) error {

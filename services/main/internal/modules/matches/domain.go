@@ -8,7 +8,23 @@ import (
 	"futhub/main/internal/entities"
 )
 
-const maxEventMinute = 130
+const (
+	maxEventMinute = 130
+	maxWindowDays  = 31
+)
+
+func validateWindow(in entities.ListMatchesInput) error {
+	startIsMissing := in.From.IsZero()
+	daysAreOutOfRange := in.Days < 1 || in.Days > maxWindowDays
+
+	switch {
+	case startIsMissing:
+		return fmt.Errorf("%w: from is required", entities.ErrInvalidInput)
+	case daysAreOutOfRange:
+		return fmt.Errorf("%w: days must be between 1 and %d", entities.ErrInvalidInput, maxWindowDays)
+	}
+	return nil
+}
 
 func validateNewMatch(in entities.CreateMatchInput) error {
 	teamsAreTheSame := in.HomeTeamID == in.AwayTeamID

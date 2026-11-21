@@ -1,7 +1,10 @@
 package matches
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -24,6 +27,8 @@ func (c *controller) routes() []routing.Route {
 
 	return []routing.Route{
 		{Method: http.MethodPost, Path: "/matches", Handler: c.create, Auth: adminOnly},
+		{Method: http.MethodGet, Path: "/matches", Handler: c.listWindow, Auth: routing.Authenticated()},
+		{Method: http.MethodGet, Path: "/matches/live", Handler: c.listLive, Auth: routing.Authenticated()},
 		{Method: http.MethodGet, Path: "/matches/{id}", Handler: c.getByID, Auth: routing.Authenticated()},
 		{Method: http.MethodGet, Path: "/championships/{id}/matches", Handler: c.listByChampionship, Auth: routing.Authenticated()},
 		{Method: http.MethodPut, Path: "/matches/{id}", Handler: c.reschedule, Auth: adminOnly},
@@ -85,6 +90,70 @@ func (c *controller) listByChampionship(w http.ResponseWriter, r *http.Request) 
 		responses = append(responses, NewMatchResponse(&championshipMatches[i]))
 	}
 	httpx.WriteJSON(w, http.StatusOK, responses)
+}
+
+const defaultWindowDays = 15
+
+func (c *controller) listWindow(w http.ResponseWriter, r *http.Request) {
+	input, err := readWindowQuery(r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	window, err := c.uc.ListWindow(r.Context(), *input)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, entities.MatchWindowResponse{
+		From:    window.From,
+		To:      window.To,
+		HasMore: window.HasMore,
+		Matches: newMatchResponses(window.Matches),
+	})
+}
+
+func (c *controller) listLive(w http.ResponseWriter, r *http.Request) {
+	liveMatches, err := c.uc.ListLive(r.Context())
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, newMatchResponses(liveMatches))
+}
+
+func readWindowQuery(r *http.Request) (*entities.ListMatchesInput, error) {
+	query := r.URL.Query()
+	input := entities.ListMatchesInput{From: time.Now().UTC(), Days: defaultWindowDays}
+
+	rawFrom := query.Get("from")
+	if rawFrom != "" {
+		from, err := time.Parse(time.RFC3339, rawFrom)
+		if err != nil {
+			return nil, fmt.Errorf("%w: from must be an RFC 3339 date and time", httpx.ErrInvalidRequest)
+		}
+		input.From = from
+	}
+
+	rawDays := query.Get("days")
+	if rawDays != "" {
+		days, err := strconv.Atoi(rawDays)
+		if err != nil {
+			return nil, fmt.Errorf("%w: days must be a number", httpx.ErrInvalidRequest)
+		}
+		input.Days = days
+	}
+	return &input, nil
+}
+
+func newMatchResponses(foundMatches []entities.Match) []entities.MatchResponse {
+	responses := make([]entities.MatchResponse, 0, len(foundMatches))
+	for i := range foundMatches {
+		responses = append(responses, NewMatchResponse(&foundMatches[i]))
+	}
+	return responses
 }
 
 func (c *controller) reschedule(w http.ResponseWriter, r *http.Request) {

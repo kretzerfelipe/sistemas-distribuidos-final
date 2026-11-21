@@ -67,6 +67,8 @@ type UseCase interface {
 	Create(ctx context.Context, in entities.CreateMatchInput) (*entities.Match, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*entities.Match, error)
 	ListByChampionship(ctx context.Context, championshipID uuid.UUID) ([]entities.Match, error)
+	ListWindow(ctx context.Context, in entities.ListMatchesInput) (*entities.MatchWindow, error)
+	ListLive(ctx context.Context) ([]entities.Match, error)
 	Reschedule(ctx context.Context, id uuid.UUID, in entities.RescheduleMatchInput) (*entities.Match, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	Start(ctx context.Context, id uuid.UUID) (*entities.Match, error)
@@ -82,6 +84,9 @@ type Repository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*entities.Match, error)
 	FindByIDForUpdate(ctx context.Context, id uuid.UUID) (*entities.Match, error)
 	ListByChampionship(ctx context.Context, championshipID uuid.UUID) ([]entities.Match, error)
+	ListScheduledBetween(ctx context.Context, from, to time.Time) ([]entities.Match, error)
+	ExistsScheduledFrom(ctx context.Context, from time.Time) (bool, error)
+	ListByStatus(ctx context.Context, status entities.MatchStatus) ([]entities.Match, error)
 	Reschedule(ctx context.Context, id uuid.UUID, scheduledAt, updatedAt time.Time) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	Transition(ctx context.Context, id uuid.UUID, from, to entities.MatchStatus, updatedAt time.Time) error

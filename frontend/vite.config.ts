@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 const apiTarget = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
+const notificationTarget = process.env.VITE_NOTIFICATION_PROXY_TARGET ?? 'http://localhost:8082'
 
 export default defineConfig({
   plugins: [
@@ -22,6 +23,12 @@ export default defineConfig({
         target: apiTarget,
         changeOrigin: true,
         rewrite: (requestPath) => requestPath.replace(/^\/api/, ''),
+      },
+      '/notification': {
+        target: notificationTarget,
+        changeOrigin: true,
+        ws: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/notification/, ''),
       },
     },
   },

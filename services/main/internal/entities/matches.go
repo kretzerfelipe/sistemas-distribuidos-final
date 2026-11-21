@@ -45,6 +45,25 @@ type RescheduleMatchInput struct {
 	ScheduledAt time.Time `json:"scheduledAt"`
 }
 
+type ListMatchesInput struct {
+	From time.Time
+	Days int
+}
+
+type MatchWindow struct {
+	From    time.Time
+	To      time.Time
+	Matches []Match
+	HasMore bool
+}
+
+type MatchWindowResponse struct {
+	From    time.Time       `json:"from"`
+	To      time.Time       `json:"to"`
+	HasMore bool            `json:"hasMore"`
+	Matches []MatchResponse `json:"matches"`
+}
+
 type MatchResponse struct {
 	ID             uuid.UUID   `json:"id"`
 	ChampionshipID uuid.UUID   `json:"championshipId"`

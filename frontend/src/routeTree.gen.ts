@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppGamesRouteImport } from './routes/_app/games'
 import { Route as AppInvitationsRouteImport } from './routes/_app/invitations'
 import { Route as AppPlayerRouteImport } from './routes/_app/player'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
@@ -39,6 +40,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGamesRoute = AppGamesRouteImport.update({
+  id: '/games',
+  path: '/games',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInvitationsRoute = AppInvitationsRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/games': typeof AppGamesRoute
   '/invitations': typeof AppInvitationsRoute
   '/player': typeof AppPlayerRoute
   '/users': typeof AppUsersRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/games': typeof AppGamesRoute
   '/invitations': typeof AppInvitationsRoute
   '/player': typeof AppPlayerRoute
   '/users': typeof AppUsersRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/_app/games': typeof AppGamesRoute
   '/_app/invitations': typeof AppInvitationsRoute
   '/_app/player': typeof AppPlayerRoute
   '/_app/users': typeof AppUsersRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/games'
     | '/invitations'
     | '/player'
     | '/users'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/register'
+    | '/games'
     | '/invitations'
     | '/player'
     | '/users'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/register'
+    | '/_app/games'
     | '/_app/invitations'
     | '/_app/player'
     | '/_app/users'
@@ -201,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/games': {
+      id: '/_app/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof AppGamesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/invitations': {
@@ -263,6 +282,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppGamesRoute: typeof AppGamesRoute
   AppInvitationsRoute: typeof AppInvitationsRoute
   AppPlayerRoute: typeof AppPlayerRoute
   AppUsersRoute: typeof AppUsersRoute
@@ -275,6 +295,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppGamesRoute: AppGamesRoute,
   AppInvitationsRoute: AppInvitationsRoute,
   AppPlayerRoute: AppPlayerRoute,
   AppUsersRoute: AppUsersRoute,

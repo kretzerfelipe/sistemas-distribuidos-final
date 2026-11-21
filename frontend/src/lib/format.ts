@@ -49,7 +49,11 @@ const errorMessagesByCode: Record<string, string> = {
   championship_has_matches: 'O campeonato tem partidas e não pode ser excluído.',
   team_already_enrolled: 'Esse time já está inscrito no campeonato.',
   team_not_enrolled: 'Esse time não está inscrito no campeonato.',
-  internal_error: 'O servidor encontrou um erro. Tente novamente em instantes.',
+  match_not_live: 'Essa partida não está ao vivo.',
+  premium_required: 'O acompanhamento em tempo real é exclusivo para assinantes.',
+  premium_unavailable: 'Não foi possível verificar a assinatura agora. Tente novamente.',
+  cache_unavailable: 'Os dados ao vivo estão indisponíveis no momento. Tente novamente em instantes.',
+  internal_error:'O servidor encontrou um erro. Tente novamente em instantes.',
 }
 
 const codesThatKeepServerDetail = new Set(['invalid_input', 'invalid_state'])

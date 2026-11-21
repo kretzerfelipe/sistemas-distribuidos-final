@@ -98,6 +98,33 @@ func (uc *useCase) ListByChampionship(ctx context.Context, championshipID uuid.U
 	return championshipMatches, nil
 }
 
+func (uc *useCase) ListWindow(ctx context.Context, in entities.ListMatchesInput) (*entities.MatchWindow, error) {
+	err := validateWindow(in)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error validating match window", err)
+	}
+
+	windowEnd := in.From.AddDate(0, 0, in.Days)
+	windowMatches, err := uc.repo.ListScheduledBetween(ctx, in.From, windowEnd)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error listing matches of the window", err)
+	}
+
+	hasMore, err := uc.repo.ExistsScheduledFrom(ctx, windowEnd)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error checking for later matches", err)
+	}
+	return &entities.MatchWindow{From: in.From, To: windowEnd, Matches: windowMatches, HasMore: hasMore}, nil
+}
+
+func (uc *useCase) ListLive(ctx context.Context) ([]entities.Match, error) {
+	liveMatches, err := uc.repo.ListByStatus(ctx, entities.MatchInProgress)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error listing live matches", err)
+	}
+	return liveMatches, nil
+}
+
 func (uc *useCase) Reschedule(ctx context.Context, id uuid.UUID, in entities.RescheduleMatchInput) (*entities.Match, error) {
 	err := validateSchedule(in)
 	if err != nil {

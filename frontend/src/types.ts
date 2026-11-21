@@ -69,6 +69,13 @@ export type Match = {
   createdAt: string
 }
 
+export type MatchWindow = {
+  from: string
+  to: string
+  hasMore: boolean
+  matches: Match[]
+}
+
 export type MatchEventType =
   | 'GOAL'
   | 'OWN_GOAL'
@@ -82,6 +89,32 @@ export type MatchEventType =
   | 'OFFSIDE'
 
 export type NamedReference = { id: string; name: string }
+
+export type MatchScore = { home: number; away: number }
+
+export type LiveMatchState = {
+  matchId: string
+  sequence: number
+  championship: NamedReference
+  homeTeam: NamedReference
+  awayTeam: NamedReference
+  scheduledAt: string
+  startedAt: string
+  score: MatchScore
+  events: MatchEvent[]
+}
+
+export type LiveSummary = {
+  matchId: string
+  sequence: number
+  championship: NamedReference
+  homeTeam: NamedReference
+  awayTeam: NamedReference
+  startedAt: string
+  score: MatchScore
+  highlights: MatchEvent[]
+  generatedAt: string
+}
 
 export type MatchEvent = {
   id: string
