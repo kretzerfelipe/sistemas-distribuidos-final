@@ -1,0 +1,8 @@
+.git
+.idea
+.env
+services/main
+services/payment
+docs
+**/*_test.go
+**/*.md
