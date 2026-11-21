@@ -1,0 +1,41 @@
+@host = http://localhost:8080
+@adminEmail = admin@futhub.local
+@adminPassword = admin12345
+@userEmail = admin@futhub.local
+@userPassword = admin12345
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiI1NjkyOTNlNS00ZTFmLTQxNmQtYmRiYy04MzkwOTVlMGI5MTkiLCJleHAiOjE3OTUyNzY4OTIsImlhdCI6MTc5NTI3MzI5Mn0.L5dQZRuM5z7JMKNR0OgeuI1OXWCcz3XRTozDGQcmNyo
+
+### Health check
+GET {{host}}/health
+
+### Register a regular user
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Ana Silva",
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Login as the regular user
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Login as the admin
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Current user (needs the userToken)
+GET {{host}}/auth/me
+Authorization: Bearer {{userToken}}
