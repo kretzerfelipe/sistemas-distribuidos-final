@@ -33,6 +33,7 @@ func (c *controller) routes() []routing.Route {
 
 		{Method: http.MethodGet, Path: "/teams/{id}/players", Handler: c.listPlayers, Auth: routing.Authenticated()},
 		{Method: http.MethodDelete, Path: "/teams/{id}/players/{playerId}", Handler: c.removePlayer, Auth: manageTeams},
+		{Method: http.MethodGet, Path: "/players/me/team", Handler: c.getMyTeam, Auth: routing.Roles(entities.RoleUser)},
 		{Method: http.MethodDelete, Path: "/players/me/team", Handler: c.leaveTeam, Auth: routing.Roles(entities.RoleUser)},
 
 		{Method: http.MethodPost, Path: "/teams/{id}/invitations", Handler: c.invite, Auth: routing.Roles(entities.RoleTeam)},
@@ -192,6 +193,21 @@ func (c *controller) removePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusNoContent, nil)
+}
+
+func (c *controller) getMyTeam(w http.ResponseWriter, r *http.Request) {
+	caller, err := api.GetCaller(r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	team, err := c.uc.GetMyTeam(r.Context(), caller)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, NewTeamResponse(team))
 }
 
 func (c *controller) leaveTeam(w http.ResponseWriter, r *http.Request) {

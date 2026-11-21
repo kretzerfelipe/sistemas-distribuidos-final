@@ -170,6 +170,12 @@ func (r *postgresRepository) DeleteMembershipByPlayer(ctx context.Context, playe
 	return nil
 }
 
+func (r *postgresRepository) FindTeamByPlayer(ctx context.Context, playerID uuid.UUID) (*entities.Team, error) {
+	row := r.pool.QueryRow(ctx,
+		"SELECT "+teamColumns+" FROM teams WHERE id = (SELECT team_id FROM team_members WHERE player_id = $1)", playerID)
+	return scanTeam(row)
+}
+
 func (r *postgresRepository) InsertInvitation(ctx context.Context, invitation *entities.Invitation) error {
 	_, err := r.pool.Exec(ctx,
 		`INSERT INTO team_invitations (id, team_id, player_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`,

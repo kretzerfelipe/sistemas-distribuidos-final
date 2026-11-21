@@ -171,6 +171,19 @@ func (uc *useCase) LeaveTeam(ctx context.Context, caller *entities.Caller) error
 	return nil
 }
 
+func (uc *useCase) GetMyTeam(ctx context.Context, caller *entities.Caller) (*entities.Team, error) {
+	player, err := uc.players.GetByUserID(ctx, caller.UserID)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error finding the caller's player to get the team", err)
+	}
+
+	team, err := uc.repo.FindTeamByPlayer(ctx, player.ID)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error finding the team of the player", err)
+	}
+	return team, nil
+}
+
 func (uc *useCase) findTeamManagedBy(ctx context.Context, caller *entities.Caller, teamID uuid.UUID) (*entities.Team, error) {
 	team, err := uc.repo.FindTeamByID(ctx, teamID)
 	if err != nil {

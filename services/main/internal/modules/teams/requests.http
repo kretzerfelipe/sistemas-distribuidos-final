@@ -96,6 +96,10 @@ Authorization: Bearer {{teamToken}}
 DELETE {{host}}/teams/{{teamId}}/players/{{playerId}}
 Authorization: Bearer {{teamToken}}
 
+### Get the team I belong to as a player (needs the player in a team)
+GET {{host}}/players/me/team
+Authorization: Bearer {{userToken}}
+
 ### Leave my team as a player (needs the player in a team)
 DELETE {{host}}/players/me/team
 Authorization: Bearer {{userToken}}

@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import type { Invitation, Player, Team } from '@/types'
 
 export type SaveTeamInput = { name: string; city: string }
@@ -12,6 +12,19 @@ export const teamsQuery = queryOptions({
 export const myTeamsQuery = queryOptions({
   queryKey: ['teams', 'mine'],
   queryFn: () => api<Team[]>('/teams/mine'),
+})
+
+export const joinedTeamQuery = queryOptions({
+  queryKey: ['teams', 'joined'],
+  queryFn: async () => {
+    try {
+      return await api<Team>('/players/me/team')
+    } catch (error) {
+      const hasNoTeam = error instanceof ApiError && error.status === 404
+      if (hasNoTeam) return null
+      throw error
+    }
+  },
 })
 
 export const teamQuery = (id: string) =>

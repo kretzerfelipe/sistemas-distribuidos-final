@@ -134,6 +134,15 @@ func (r *inMemoryRepository) DeleteMembershipByPlayer(_ context.Context, playerI
 	return nil
 }
 
+func (r *inMemoryRepository) FindTeamByPlayer(_ context.Context, playerID uuid.UUID) (*entities.Team, error) {
+	teamID, isInTeam := r.teamOfPlayer[playerID]
+	if !isInTeam {
+		return nil, entities.ErrNotFound
+	}
+	team := r.teamsByID[teamID]
+	return &team, nil
+}
+
 func (r *inMemoryRepository) InsertInvitation(_ context.Context, invitation *entities.Invitation) error {
 	for _, existing := range r.invitationsByID {
 		samePair := existing.TeamID == invitation.TeamID && existing.PlayerID == invitation.PlayerID
@@ -646,6 +655,32 @@ func TestLeaveTeamFailsForAUserWithoutAPlayerProfile(t *testing.T) {
 
 	if !errors.Is(err, entities.ErrNotFound) {
 		t.Errorf("want ErrNotFound, got %v", err)
+	}
+}
+
+func TestGetMyTeamReturnsTheTeamTheyJoinedAndNotFoundOtherwise(t *testing.T) {
+	env := newTestEnvironment()
+	owner := newTeamCaller()
+	team := env.createTeam(t, owner, "Furb FC")
+	playerCaller, player := env.newPlayerUser()
+	freeAgentCaller, _ := env.newPlayerUser()
+	invitation := env.invite(t, owner, team, player)
+	if _, err := env.useCase.AcceptInvitation(context.Background(), playerCaller, invitation.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	mine, err := env.useCase.GetMyTeam(context.Background(), playerCaller)
+	none, noneErr := env.useCase.GetMyTeam(context.Background(), freeAgentCaller)
+	noProfile, noProfileErr := env.useCase.GetMyTeam(context.Background(), newUserCaller())
+
+	if err != nil || mine.ID != team.ID {
+		t.Errorf("want the joined team, got %+v (err=%v)", mine, err)
+	}
+	if !errors.Is(noneErr, entities.ErrNotFound) || none != nil {
+		t.Errorf("a player without a team must get ErrNotFound, got %v / %v", noneErr, none)
+	}
+	if !errors.Is(noProfileErr, entities.ErrNotFound) || noProfile != nil {
+		t.Errorf("a user without a player profile must get ErrNotFound, got %v / %v", noProfileErr, noProfile)
 	}
 }
 

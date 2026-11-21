@@ -43,6 +43,7 @@ type UseCase interface {
 	PlayerBelongsToTeam(ctx context.Context, teamID, playerID uuid.UUID) (bool, error)
 	RemovePlayer(ctx context.Context, caller *entities.Caller, teamID, playerID uuid.UUID) error
 	LeaveTeam(ctx context.Context, caller *entities.Caller) error
+	GetMyTeam(ctx context.Context, caller *entities.Caller) (*entities.Team, error)
 
 	Invite(ctx context.Context, caller *entities.Caller, teamID, playerID uuid.UUID) (*entities.Invitation, error)
 	ListTeamInvitations(ctx context.Context, caller *entities.Caller, teamID uuid.UUID) ([]entities.Invitation, error)
@@ -66,6 +67,7 @@ type Repository interface {
 	PlayerIsMemberOfTeam(ctx context.Context, teamID, playerID uuid.UUID) (bool, error)
 	DeleteMembership(ctx context.Context, teamID, playerID uuid.UUID) error
 	DeleteMembershipByPlayer(ctx context.Context, playerID uuid.UUID) error
+	FindTeamByPlayer(ctx context.Context, playerID uuid.UUID) (*entities.Team, error)
 
 	InsertInvitation(ctx context.Context, invitation *entities.Invitation) error
 	FindInvitationByID(ctx context.Context, id uuid.UUID) (*entities.Invitation, error)
