@@ -121,15 +121,28 @@ services:
     networks: [futhub-net]
 
   notification:
-    profiles: ["apps"]
-    build: ./services/notification
-    depends_on: *app-depends
+    build:
+      context: .
+      dockerfile: services/notification/Dockerfile
+    depends_on:
+      <<: *app-depends
+      rabbitmq: { condition: service_healthy }
     environment:
       <<: *app-env
       HTTP_PORT: 8080
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      CONSUMER_QUEUE: notification.q
+      RETRY_QUEUE: notification.retry
+      DEAD_LETTER_QUEUE: notification.dlq
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      PREFETCH: ${PREFETCH:-5}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
       DATABASE_URL: postgres://${DB_USER:-futhub}:${DB_PASSWORD:-futhub123}@${DB_HOST_NOTIFICATION:-ministack-rds-281afe4a44d7-instance-futhub-notification}:5432/db_notification
       REDIS_URL: redis://${REDIS_HOST:-ministack-elasticache-000000000000-us-east-1-futhub-cache}:6379
       SNAPSHOT_INTERVAL_SECONDS: ${SNAPSHOT_INTERVAL_SECONDS:-300}
+      PREMIUM_USER_IDS: ${PREMIUM_USER_IDS:-}
+      ADMIN_IS_PREMIUM: ${ADMIN_IS_PREMIUM:-true}
+      CONTRACTS_DIR: /app/contracts
     ports:
       - "8082:8080"
     networks: [futhub-net]
