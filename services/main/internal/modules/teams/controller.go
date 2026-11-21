@@ -24,7 +24,7 @@ func (c *controller) routes() []routing.Route {
 	manageTeams := routing.Roles(entities.RoleTeam, entities.RoleAdmin)
 
 	return []routing.Route{
-		{Method: http.MethodPost, Path: "/teams", Handler: c.create, Auth: routing.Roles(entities.RoleTeam)},
+		{Method: http.MethodPost, Path: "/teams", Handler: c.create, Auth: manageTeams},
 		{Method: http.MethodGet, Path: "/teams", Handler: c.list, Auth: routing.Authenticated()},
 		{Method: http.MethodGet, Path: "/teams/mine", Handler: c.listMine, Auth: routing.Roles(entities.RoleTeam)},
 		{Method: http.MethodGet, Path: "/teams/{id}", Handler: c.getByID, Auth: routing.Authenticated()},
