@@ -23,8 +23,15 @@ type Match struct {
 	Status         MatchStatus
 	HomeScore      int
 	AwayScore      int
+	Sequence       int
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+}
+
+type MatchProgress struct {
+	Sequence  int
+	HomeScore int
+	AwayScore int
 }
 
 type CreateMatchInput struct {
@@ -36,11 +43,6 @@ type CreateMatchInput struct {
 
 type RescheduleMatchInput struct {
 	ScheduledAt time.Time `json:"scheduledAt"`
-}
-
-type FinishMatchInput struct {
-	HomeScore int `json:"homeScore"`
-	AwayScore int `json:"awayScore"`
 }
 
 type MatchResponse struct {

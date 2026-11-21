@@ -7,15 +7,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"futhub/main/internal/platform/config"
+	"futhub/main/internal/platform/db"
+	"futhub/main/internal/platform/outbox"
 	"futhub/main/internal/platform/security"
 )
 
 type Deps struct {
-	Config config.Config
-	Logger *slog.Logger
-	DB     *pgxpool.Pool
-	Hasher security.PasswordHasher
-	Tokens *security.TokenManager
+	Config       config.Config
+	Logger       *slog.Logger
+	DB           *pgxpool.Pool
+	Transactions *db.TransactionManager
+	Outbox       outbox.Writer
+	Hasher       security.PasswordHasher
+	Tokens       *security.TokenManager
 }
 
 type Module interface {

@@ -16,9 +16,9 @@ type Module struct {
 	tokens *security.TokenManager
 }
 
-func New(d app.Deps, championships ChampionshipService) *Module {
+func New(d app.Deps, championships ChampionshipService, teams TeamService, players PlayerService) *Module {
 	repo := newPostgresRepository(d.DB)
-	uc := newUseCase(repo, championships)
+	uc := newUseCase(repo, championships, teams, players, d.Transactions, d.Outbox)
 	return &Module{
 		uc:     uc,
 		ctrl:   newController(uc),

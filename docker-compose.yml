@@ -30,6 +30,22 @@ services:
       interval: 5s
       retries: 20
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks: [futhub-net]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      retries: 20
+
   # Runs once and exits: creates the S3 bucket, the RDS databases and the ElastiCache cluster in MiniStack.
   init:
     image: amazon/aws-cli
@@ -55,10 +71,15 @@ services:
   # ---------------------------------------------------------------------------
   main:
     build: ./services/main
-    depends_on: *app-depends
+    depends_on:
+      <<: *app-depends
+      rabbitmq: { condition: service_healthy }
     environment:
       <<: *app-env
       HTTP_PORT: 8080
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      EVENTS_EXCHANGE: ${EVENTS_EXCHANGE:-futhub.events}
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-500}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
       BCRYPT_COST: ${BCRYPT_COST:-12}
@@ -104,6 +125,9 @@ services:
     ports:
       - "8082:8080"
     networks: [futhub-net]
+
+volumes:
+  rabbitmq-data:
 
 networks:
   futhub-net:

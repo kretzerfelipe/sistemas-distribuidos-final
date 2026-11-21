@@ -110,6 +110,11 @@ func (r *inMemoryRepository) PlayerIsInTeam(_ context.Context, playerID uuid.UUI
 	return isInTeam, nil
 }
 
+func (r *inMemoryRepository) PlayerIsMemberOfTeam(_ context.Context, teamID, playerID uuid.UUID) (bool, error) {
+	memberTeamID, isInTeam := r.teamOfPlayer[playerID]
+	return isInTeam && memberTeamID == teamID, nil
+}
+
 func (r *inMemoryRepository) DeleteMembership(_ context.Context, teamID, playerID uuid.UUID) error {
 	memberTeamID, isInTeam := r.teamOfPlayer[playerID]
 	playerIsNotInThisTeam := !isInTeam || memberTeamID != teamID
@@ -676,5 +681,24 @@ func TestListTeamInvitationsIsAllowedForTheOwnerAndTheAdminOnly(t *testing.T) {
 	}
 	if !errors.Is(strangerErr, entities.ErrForbidden) || byStranger != nil {
 		t.Errorf("a stranger must be forbidden: %v / %v", strangerErr, byStranger)
+	}
+}
+
+func TestPlayerBelongsToTeamOnlyForTheTeamTheyJoined(t *testing.T) {
+	env := newTestEnvironment()
+	owner := newTeamCaller()
+	team := env.createTeam(t, owner, "Furb FC")
+	otherTeam := env.createTeam(t, newTeamCaller(), "Other FC")
+	playerCaller, player := env.newPlayerUser()
+	invitation := env.invite(t, owner, team, player)
+	if _, err := env.useCase.AcceptInvitation(context.Background(), playerCaller, invitation.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	inOwnTeam, ownErr := env.useCase.PlayerBelongsToTeam(context.Background(), team.ID, player.ID)
+	inOtherTeam, otherErr := env.useCase.PlayerBelongsToTeam(context.Background(), otherTeam.ID, player.ID)
+
+	if ownErr != nil || otherErr != nil || !inOwnTeam || inOtherTeam {
+		t.Errorf("want true/false, got %v/%v (errs %v / %v)", inOwnTeam, inOtherTeam, ownErr, otherErr)
 	}
 }

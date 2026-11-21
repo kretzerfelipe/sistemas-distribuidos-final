@@ -24,6 +24,8 @@ import (
 	"futhub/main/internal/platform/db"
 	"futhub/main/internal/platform/httpx"
 	"futhub/main/internal/platform/logger"
+	"futhub/main/internal/platform/messaging"
+	"futhub/main/internal/platform/outbox"
 	"futhub/main/internal/platform/security"
 )
 
@@ -61,12 +63,20 @@ func run() error {
 	}
 	log.Info("database ready, migrations applied")
 
+	broker := messaging.NewBroker(cfg.RabbitMQURL, log)
+	go broker.Run(ctx)
+
+	publisher := outbox.NewPublisher(outbox.NewStore(pool), broker, cfg.EventsExchange, cfg.OutboxPollInterval, cfg.OutboxBatchSize, log)
+	go publisher.Run(ctx)
+
 	deps := app.Deps{
-		Config: cfg,
-		Logger: log,
-		DB:     pool,
-		Hasher: security.NewBcryptHasher(cfg.BcryptCost),
-		Tokens: security.NewTokenManager(cfg.JWTSecret, cfg.JWTExpiration),
+		Config:       cfg,
+		Logger:       log,
+		DB:           pool,
+		Transactions: db.NewTransactionManager(pool),
+		Outbox:       outbox.NewWriter(pool),
+		Hasher:       security.NewBcryptHasher(cfg.BcryptCost),
+		Tokens:       security.NewTokenManager(cfg.JWTSecret, cfg.JWTExpiration),
 	}
 
 	usersModule := users.New(deps)
@@ -78,9 +88,9 @@ func run() error {
 	playersModule := players.New(deps)
 	teamsModule := teams.New(deps, playersModule.Service())
 	championshipsModule := championships.New(deps, teamsModule.Service())
-	matchesModule := matches.New(deps, championshipsModule.Service())
+	matchesModule := matches.New(deps, championshipsModule.Service(), teamsModule.Service(), playersModule.Service())
 
-	router, err := newRouter(log, pool, usersModule, authModule, playersModule, teamsModule, championshipsModule, matchesModule)
+	router, err := newRouter(log, pool, broker, usersModule, authModule, playersModule, teamsModule, championshipsModule, matchesModule)
 	if err != nil {
 		return err
 	}
@@ -96,10 +106,10 @@ func run() error {
 	return serve(ctx, server, log)
 }
 
-func newRouter(log *slog.Logger, database pinger, modules ...app.Module) (http.Handler, error) {
+func newRouter(log *slog.Logger, database pinger, broker brokerState, modules ...app.Module) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(httpx.CorrelationID, httpx.RequestLogger(log), httpx.Recover(log))
-	router.Get("/health", healthHandler(database, log))
+	router.Get("/health", healthHandler(database, broker, log))
 
 	for _, module := range modules {
 		err := module.RegisterRoutes(router)
@@ -151,26 +161,46 @@ type pinger interface {
 	Ping(ctx context.Context) error
 }
 
-func healthHandler(database pinger, log *slog.Logger) http.HandlerFunc {
+type brokerState interface {
+	IsConnected() bool
+}
+
+func healthHandler(database pinger, broker brokerState, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), healthCheckTimeout)
 		defer cancel()
 
 		err := database.Ping(ctx)
 		databaseIsUp := err == nil
+		brokerIsUp := broker.IsConnected()
 
-		if databaseIsUp {
-			writeHealth(w, http.StatusOK, "ok", "up")
-			return
+		httpStatus := http.StatusOK
+		if !databaseIsUp {
+			log.Warn("health check: database down", "error", err)
+			httpStatus = http.StatusServiceUnavailable
 		}
-		log.Warn("health check: database down", "error", err)
-		writeHealth(w, http.StatusServiceUnavailable, "degraded", "down")
+		everythingIsUp := databaseIsUp && brokerIsUp
+
+		httpx.WriteJSON(w, httpStatus, map[string]any{
+			"status": statusName(everythingIsUp),
+			"checks": map[string]string{
+				"database": upOrDown(databaseIsUp),
+				"rabbitmq": upOrDown(brokerIsUp),
+			},
+		})
 	}
 }
 
-func writeHealth(w http.ResponseWriter, httpStatus int, serviceStatus, databaseStatus string) {
-	httpx.WriteJSON(w, httpStatus, map[string]any{
-		"status": serviceStatus,
-		"checks": map[string]string{"database": databaseStatus},
-	})
+func statusName(everythingIsUp bool) string {
+	if everythingIsUp {
+		return "ok"
+	}
+	return "degraded"
+}
+
+func upOrDown(isUp bool) string {
+	if isUp {
+		return "up"
+	}
+	return "down"
 }

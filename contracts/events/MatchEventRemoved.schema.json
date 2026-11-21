@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MatchEventRemoved",
+  "description": "Routing key: match.event-removed. An admin removed a play registered by mistake; score is the corrected score.",
+  "allOf": [
+    { "$ref": "../envelope.schema.json" },
+    {
+      "properties": {
+        "type": { "const": "MatchEventRemoved" },
+        "version": { "const": 1 },
+        "payload": {
+          "type": "object",
+          "required": ["matchId", "sequence", "eventId", "score"],
+          "additionalProperties": false,
+          "properties": {
+            "matchId": { "$ref": "../common.schema.json#/$defs/uuid" },
+            "sequence": { "$ref": "../common.schema.json#/$defs/sequence" },
+            "eventId": { "$ref": "../common.schema.json#/$defs/uuid" },
+            "score": { "$ref": "../common.schema.json#/$defs/score" }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -40,6 +40,7 @@ type UseCase interface {
 	Delete(ctx context.Context, caller *entities.Caller, id uuid.UUID) error
 
 	ListPlayers(ctx context.Context, teamID uuid.UUID) ([]entities.Player, error)
+	PlayerBelongsToTeam(ctx context.Context, teamID, playerID uuid.UUID) (bool, error)
 	RemovePlayer(ctx context.Context, caller *entities.Caller, teamID, playerID uuid.UUID) error
 	LeaveTeam(ctx context.Context, caller *entities.Caller) error
 
@@ -62,6 +63,7 @@ type Repository interface {
 
 	ListMemberPlayerIDs(ctx context.Context, teamID uuid.UUID) ([]uuid.UUID, error)
 	PlayerIsInTeam(ctx context.Context, playerID uuid.UUID) (bool, error)
+	PlayerIsMemberOfTeam(ctx context.Context, teamID, playerID uuid.UUID) (bool, error)
 	DeleteMembership(ctx context.Context, teamID, playerID uuid.UUID) error
 	DeleteMembershipByPlayer(ctx context.Context, playerID uuid.UUID) error
 

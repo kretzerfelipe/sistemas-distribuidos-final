@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shared definitions",
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "namedReference": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "score": {
+      "type": "object",
+      "required": ["home", "away"],
+      "additionalProperties": false,
+      "properties": {
+        "home": { "type": "integer", "minimum": 0 },
+        "away": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "matchEvent": {
+      "type": "object",
+      "required": ["id", "sequence", "type", "minute", "teamId", "player", "secondaryPlayer", "registeredAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "sequence": { "$ref": "#/$defs/sequence" },
+        "type": {
+          "enum": ["GOAL", "OWN_GOAL", "SHOT", "SAVE", "FOUL", "YELLOW_CARD", "RED_CARD", "SUBSTITUTION", "CORNER", "OFFSIDE"]
+        },
+        "minute": { "type": "integer", "minimum": 0, "maximum": 130 },
+        "teamId": { "$ref": "#/$defs/uuid" },
+        "player": { "oneOf": [{ "$ref": "#/$defs/namedReference" }, { "type": "null" }] },
+        "secondaryPlayer": { "oneOf": [{ "$ref": "#/$defs/namedReference" }, { "type": "null" }] },
+        "registeredAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

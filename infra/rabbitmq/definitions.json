@@ -1,0 +1,23 @@
+{
+  "rabbit_version": "3.13.0",
+  "users": [
+    { "name": "guest", "password": "guest", "tags": ["administrator"] }
+  ],
+  "vhosts": [
+    { "name": "/" }
+  ],
+  "permissions": [
+    { "user": "guest", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*" }
+  ],
+  "exchanges": [
+    { "name": "futhub.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+  ],
+  "queues": [
+    { "name": "notification.q",     "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "notification.retry", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-message-ttl": 5000, "x-dead-letter-exchange": "", "x-dead-letter-routing-key": "notification.q" } },
+    { "name": "notification.dlq",   "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
+  ],
+  "bindings": [
+    { "source": "futhub.events", "vhost": "/", "destination": "notification.q", "destination_type": "queue", "routing_key": "match.*", "arguments": {} }
+  ]
+}

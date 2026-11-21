@@ -3,8 +3,12 @@ package matches
 import (
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"futhub/main/internal/entities"
 )
+
+const maxEventMinute = 130
 
 func validateNewMatch(in entities.CreateMatchInput) error {
 	teamsAreTheSame := in.HomeTeamID == in.AwayTeamID
@@ -27,10 +31,56 @@ func validateSchedule(in entities.RescheduleMatchInput) error {
 	return nil
 }
 
-func validateScore(in entities.FinishMatchInput) error {
-	scoreIsNegative := in.HomeScore < 0 || in.AwayScore < 0
-	if scoreIsNegative {
-		return fmt.Errorf("%w: scores cannot be negative", entities.ErrInvalidInput)
+func eventTypeIsValid(eventType entities.MatchEventType) bool {
+	switch eventType {
+	case entities.EventGoal, entities.EventOwnGoal, entities.EventShot, entities.EventSave, entities.EventFoul,
+		entities.EventYellowCard, entities.EventRedCard, entities.EventSubstitution, entities.EventCorner, entities.EventOffside:
+		return true
+	}
+	return false
+}
+
+func validateEvent(in entities.RegisterMatchEventInput, match *entities.Match) error {
+	typeIsInvalid := !eventTypeIsValid(in.Type)
+	minuteIsOutOfRange := in.Minute < 0 || in.Minute > maxEventMinute
+	teamIsNotInTheMatch := in.TeamID != match.HomeTeamID && in.TeamID != match.AwayTeamID
+
+	isSubstitution := in.Type == entities.EventSubstitution
+	substitutionNeedsTwoPlayers := isSubstitution && (in.PlayerID == nil || in.SecondaryPlayerID == nil)
+	substitutionUsesTheSamePlayer := isSubstitution && in.PlayerID != nil && in.SecondaryPlayerID != nil && *in.PlayerID == *in.SecondaryPlayerID
+	onlySubstitutionsHaveASecondaryPlayer := !isSubstitution && in.SecondaryPlayerID != nil
+
+	switch {
+	case typeIsInvalid:
+		return fmt.Errorf("%w: type is not valid", entities.ErrInvalidInput)
+	case minuteIsOutOfRange:
+		return fmt.Errorf("%w: minute must be between 0 and %d", entities.ErrInvalidInput, maxEventMinute)
+	case teamIsNotInTheMatch:
+		return fmt.Errorf("%w: teamId must be the home or the away team of the match", entities.ErrInvalidInput)
+	case substitutionNeedsTwoPlayers:
+		return fmt.Errorf("%w: a substitution needs playerId (who enters) and secondaryPlayerId (who leaves)", entities.ErrInvalidInput)
+	case substitutionUsesTheSamePlayer:
+		return fmt.Errorf("%w: a substitution needs two different players", entities.ErrInvalidInput)
+	case onlySubstitutionsHaveASecondaryPlayer:
+		return fmt.Errorf("%w: secondaryPlayerId is only used by substitutions", entities.ErrInvalidInput)
 	}
 	return nil
+}
+
+func scoreDeltas(eventType entities.MatchEventType, teamID uuid.UUID, match *entities.Match) (homeDelta, awayDelta int) {
+	teamIsHome := teamID == match.HomeTeamID
+
+	switch eventType {
+	case entities.EventGoal:
+		if teamIsHome {
+			return 1, 0
+		}
+		return 0, 1
+	case entities.EventOwnGoal:
+		if teamIsHome {
+			return 0, 1
+		}
+		return 1, 0
+	}
+	return 0, 0
 }

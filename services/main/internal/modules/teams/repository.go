@@ -136,6 +136,16 @@ func (r *postgresRepository) PlayerIsInTeam(ctx context.Context, playerID uuid.U
 	return isInTeam, nil
 }
 
+func (r *postgresRepository) PlayerIsMemberOfTeam(ctx context.Context, teamID, playerID uuid.UUID) (bool, error) {
+	var isMember bool
+	err := r.pool.QueryRow(ctx,
+		"SELECT EXISTS (SELECT 1 FROM team_members WHERE team_id = $1 AND player_id = $2)", teamID, playerID).Scan(&isMember)
+	if err != nil {
+		return false, util.SendMessageWithError("repository error checking membership of a team", err)
+	}
+	return isMember, nil
+}
+
 func (r *postgresRepository) DeleteMembership(ctx context.Context, teamID, playerID uuid.UUID) error {
 	result, err := r.pool.Exec(ctx, "DELETE FROM team_members WHERE team_id = $1 AND player_id = $2", teamID, playerID)
 	if err != nil {

@@ -5,7 +5,10 @@
 @championshipId =
 @homeTeamId =
 @awayTeamId =
+@playerId =
+@secondaryPlayerId =
 @matchId =
+@eventId =
 
 ### Login as the admin (copy the accessToken into @adminToken)
 POST {{host}}/auth/login
@@ -45,19 +48,57 @@ Content-Type: application/json
   "scheduledAt": "2027-03-02T18:00:00Z"
 }
 
-### Start a match (the championship must be in progress)
+### Start a match (the championship must be in progress; publishes MatchStarted)
 POST {{host}}/matches/{{matchId}}/start
 Authorization: Bearer {{adminToken}}
 
-### Finish a match with the final score
-POST {{host}}/matches/{{matchId}}/finish
+### Register a goal of the home team (copy the id into @eventId; publishes MatchEventRegistered)
+POST {{host}}/matches/{{matchId}}/events
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "homeScore": 2,
-  "awayScore": 1
+  "type": "GOAL",
+  "minute": 23,
+  "teamId": "{{homeTeamId}}",
+  "playerId": "{{playerId}}"
 }
+
+### Register a yellow card without a player
+POST {{host}}/matches/{{matchId}}/events
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "type": "YELLOW_CARD",
+  "minute": 31,
+  "teamId": "{{awayTeamId}}"
+}
+
+### Register a substitution (playerId enters, secondaryPlayerId leaves)
+POST {{host}}/matches/{{matchId}}/events
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "type": "SUBSTITUTION",
+  "minute": 60,
+  "teamId": "{{homeTeamId}}",
+  "playerId": "{{playerId}}",
+  "secondaryPlayerId": "{{secondaryPlayerId}}"
+}
+
+### List the events of a match
+GET {{host}}/matches/{{matchId}}/events
+Authorization: Bearer {{adminToken}}
+
+### Remove an event registered by mistake (publishes MatchEventRemoved)
+DELETE {{host}}/matches/{{matchId}}/events/{{eventId}}
+Authorization: Bearer {{adminToken}}
+
+### Finish a match (the score is the sum of the goals; publishes MatchFinished)
+POST {{host}}/matches/{{matchId}}/finish
+Authorization: Bearer {{adminToken}}
 
 ### Delete a match (only while scheduled)
 DELETE {{host}}/matches/{{matchId}}

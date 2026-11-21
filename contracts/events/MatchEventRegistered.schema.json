@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MatchEventRegistered",
+  "description": "Routing key: match.event-registered. One play of the match (goal, card, shot...) and the score after it.",
+  "allOf": [
+    { "$ref": "../envelope.schema.json" },
+    {
+      "properties": {
+        "type": { "const": "MatchEventRegistered" },
+        "version": { "const": 1 },
+        "payload": {
+          "type": "object",
+          "required": ["matchId", "sequence", "event", "score"],
+          "additionalProperties": false,
+          "properties": {
+            "matchId": { "$ref": "../common.schema.json#/$defs/uuid" },
+            "sequence": { "$ref": "../common.schema.json#/$defs/sequence" },
+            "event": { "$ref": "../common.schema.json#/$defs/matchEvent" },
+            "score": { "$ref": "../common.schema.json#/$defs/score" }
+          }
+        }
+      }
+    }
+  ]
+}

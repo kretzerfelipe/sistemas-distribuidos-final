@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "description": "Common envelope of every message published on the futhub.events exchange.",
+  "type": "object",
+  "required": ["messageId", "correlationId", "type", "version", "occurredAt", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "messageId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "pattern": "^[A-Z][A-Za-z]+$" },
+    "version": { "type": "integer", "minimum": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "payload": { "type": "object" }
+  }
+}

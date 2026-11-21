@@ -137,6 +137,14 @@ func (uc *useCase) ListPlayers(ctx context.Context, teamID uuid.UUID) ([]entitie
 	return roster, nil
 }
 
+func (uc *useCase) PlayerBelongsToTeam(ctx context.Context, teamID, playerID uuid.UUID) (bool, error) {
+	belongsToTeam, err := uc.repo.PlayerIsMemberOfTeam(ctx, teamID, playerID)
+	if err != nil {
+		return false, util.SendMessageWithError("use case error checking team membership", err)
+	}
+	return belongsToTeam, nil
+}
+
 func (uc *useCase) RemovePlayer(ctx context.Context, caller *entities.Caller, teamID, playerID uuid.UUID) error {
 	team, err := uc.findTeamManagedBy(ctx, caller, teamID)
 	if err != nil {

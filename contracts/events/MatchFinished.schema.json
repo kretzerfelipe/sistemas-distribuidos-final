@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MatchFinished",
+  "description": "Routing key: match.finished. The match is over: the live service can drop the cache of this match.",
+  "allOf": [
+    { "$ref": "../envelope.schema.json" },
+    {
+      "properties": {
+        "type": { "const": "MatchFinished" },
+        "version": { "const": 1 },
+        "payload": {
+          "type": "object",
+          "required": ["matchId", "sequence", "finishedAt", "score"],
+          "additionalProperties": false,
+          "properties": {
+            "matchId": { "$ref": "../common.schema.json#/$defs/uuid" },
+            "sequence": { "$ref": "../common.schema.json#/$defs/sequence" },
+            "finishedAt": { "type": "string", "format": "date-time" },
+            "score": { "$ref": "../common.schema.json#/$defs/score" }
+          }
+        }
+      }
+    }
+  ]
+}

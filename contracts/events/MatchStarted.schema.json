@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MatchStarted",
+  "description": "Routing key: match.started. Opens the live view of a match. sequence is always 1.",
+  "allOf": [
+    { "$ref": "../envelope.schema.json" },
+    {
+      "properties": {
+        "type": { "const": "MatchStarted" },
+        "version": { "const": 1 },
+        "payload": {
+          "type": "object",
+          "required": ["matchId", "sequence", "championship", "homeTeam", "awayTeam", "scheduledAt", "startedAt", "score"],
+          "additionalProperties": false,
+          "properties": {
+            "matchId": { "$ref": "../common.schema.json#/$defs/uuid" },
+            "sequence": { "$ref": "../common.schema.json#/$defs/sequence" },
+            "championship": { "$ref": "../common.schema.json#/$defs/namedReference" },
+            "homeTeam": { "$ref": "../common.schema.json#/$defs/namedReference" },
+            "awayTeam": { "$ref": "../common.schema.json#/$defs/namedReference" },
+            "scheduledAt": { "type": "string", "format": "date-time" },
+            "startedAt": { "type": "string", "format": "date-time" },
+            "score": { "$ref": "../common.schema.json#/$defs/score" }
+          }
+        }
+      }
+    }
+  ]
+}
