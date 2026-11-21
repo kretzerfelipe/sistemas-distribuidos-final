@@ -1,0 +1,101 @@
+@host = http://localhost:8080
+@adminEmail = admin@futhub.local
+@adminPassword = admin12345
+@userEmail = pele@example.com
+@userPassword = s3cret-pass
+@teamEmail = team@example.com
+@teamPassword = s3cret-pass
+@adminToken =
+@userToken =
+@teamToken =
+@playerId =
+
+### Register a regular user
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Edson Arantes",
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Register a team user
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Furb FC Owner",
+  "email": "{{teamEmail}}",
+  "password": "{{teamPassword}}",
+  "accountType": "TEAM"
+}
+
+### Login as the regular user (copy the accessToken into @userToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Login as the team user (copy the accessToken into @teamToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{teamEmail}}",
+  "password": "{{teamPassword}}"
+}
+
+### Login as the admin (copy the accessToken into @adminToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Create my player profile (copy the id into @playerId)
+POST {{host}}/players
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Pele",
+  "position": "FORWARD",
+  "shirtNumber": 10
+}
+
+### Get my player profile
+GET {{host}}/players/me
+Authorization: Bearer {{userToken}}
+
+### Update my player profile
+PUT {{host}}/players/me
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Pele",
+  "position": "MIDFIELDER",
+  "shirtNumber": 8
+}
+
+### List players as a team user
+GET {{host}}/players
+Authorization: Bearer {{teamToken}}
+
+### Get a player by id as a team user
+GET {{host}}/players/{{playerId}}
+Authorization: Bearer {{teamToken}}
+
+### Delete my player profile
+DELETE {{host}}/players/me
+Authorization: Bearer {{userToken}}
+
+### Delete a player as admin
+DELETE {{host}}/players/{{playerId}}
+Authorization: Bearer {{adminToken}}

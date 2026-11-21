@@ -3,9 +3,10 @@ package entities
 import "time"
 
 type RegisterInput struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	AccountType Role   `json:"accountType"`
 }
 
 type LoginInput struct {

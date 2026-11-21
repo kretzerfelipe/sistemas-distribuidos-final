@@ -41,7 +41,17 @@ func newUseCase(userService UserService, hasher security.PasswordHasher, tokens 
 }
 
 func (uc *useCase) Register(ctx context.Context, in entities.RegisterInput) (*entities.User, error) {
-	user, err := uc.createUser(ctx, in.Name, in.Email, in.Password, entities.RoleUser)
+	accountType := in.AccountType
+	accountTypeWasNotInformed := accountType == ""
+	if accountTypeWasNotInformed {
+		accountType = entities.RoleUser
+	}
+	accountTypeIsAllowed := accountType == entities.RoleUser || accountType == entities.RoleTeam
+	if !accountTypeIsAllowed {
+		return nil, fmt.Errorf("%w: accountType must be USER or TEAM", entities.ErrInvalidInput)
+	}
+
+	user, err := uc.createUser(ctx, in.Name, in.Email, in.Password, accountType)
 	if err != nil {
 		return nil, util.SendMessageWithError("use case error registering user", err)
 	}

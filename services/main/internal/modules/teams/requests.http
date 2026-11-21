@@ -1,0 +1,105 @@
+@host = http://localhost:8080
+@userEmail = pele@example.com
+@userPassword = s3cret-pass
+@teamEmail = team@example.com
+@teamPassword = s3cret-pass
+@userToken =
+@teamToken =
+@playerId =
+@teamId =
+@invitationId =
+
+### Login as the team user (copy the accessToken into @teamToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{teamEmail}}",
+  "password": "{{teamPassword}}"
+}
+
+### Login as the player user (copy the accessToken into @userToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Create a team (copy the id into @teamId)
+POST {{host}}/teams
+Authorization: Bearer {{teamToken}}
+Content-Type: application/json
+
+{
+  "name": "Furb FC",
+  "city": "Blumenau"
+}
+
+### List all teams
+GET {{host}}/teams
+Authorization: Bearer {{teamToken}}
+
+### List my teams
+GET {{host}}/teams/mine
+Authorization: Bearer {{teamToken}}
+
+### Get a team
+GET {{host}}/teams/{{teamId}}
+Authorization: Bearer {{teamToken}}
+
+### Update a team
+PUT {{host}}/teams/{{teamId}}
+Authorization: Bearer {{teamToken}}
+Content-Type: application/json
+
+{
+  "name": "Furb FC",
+  "city": "Itajai"
+}
+
+### Invite a player (copy the invitation id into @invitationId; the player id comes from the players requests)
+POST {{host}}/teams/{{teamId}}/invitations
+Authorization: Bearer {{teamToken}}
+Content-Type: application/json
+
+{
+  "playerId": "{{playerId}}"
+}
+
+### List the invitations of a team
+GET {{host}}/teams/{{teamId}}/invitations
+Authorization: Bearer {{teamToken}}
+
+### List my invitations as a player
+GET {{host}}/invitations
+Authorization: Bearer {{userToken}}
+
+### Accept an invitation as a player
+POST {{host}}/invitations/{{invitationId}}/accept
+Authorization: Bearer {{userToken}}
+
+### Decline an invitation as a player (needs another pending invitation)
+POST {{host}}/invitations/{{invitationId}}/decline
+Authorization: Bearer {{userToken}}
+
+### Cancel an invitation as the team (needs a pending invitation)
+DELETE {{host}}/teams/{{teamId}}/invitations/{{invitationId}}
+Authorization: Bearer {{teamToken}}
+
+### List the players of a team
+GET {{host}}/teams/{{teamId}}/players
+Authorization: Bearer {{teamToken}}
+
+### Remove a player from the team (needs the player in the team)
+DELETE {{host}}/teams/{{teamId}}/players/{{playerId}}
+Authorization: Bearer {{teamToken}}
+
+### Leave my team as a player (needs the player in a team)
+DELETE {{host}}/players/me/team
+Authorization: Bearer {{userToken}}
+
+### Delete a team
+DELETE {{host}}/teams/{{teamId}}
+Authorization: Bearer {{teamToken}}

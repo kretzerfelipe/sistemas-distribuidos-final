@@ -1,0 +1,94 @@
+@host = http://localhost:8080
+@adminEmail = admin@futhub.local
+@adminPassword = admin12345
+@teamEmail = team@example.com
+@teamPassword = s3cret-pass
+@adminToken =
+@teamToken =
+@championshipId =
+@teamId =
+@otherTeamId =
+
+### Login as the admin (copy the accessToken into @adminToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Login as the team user (copy the accessToken into @teamToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{teamEmail}}",
+  "password": "{{teamPassword}}"
+}
+
+### Create a championship (copy the id into @championshipId)
+POST {{host}}/championships
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Copa Furb",
+  "slotsTotal": 10
+}
+
+### List championships
+GET {{host}}/championships
+Authorization: Bearer {{teamToken}}
+
+### Get a championship
+GET {{host}}/championships/{{championshipId}}
+Authorization: Bearer {{teamToken}}
+
+### Update a championship
+PUT {{host}}/championships/{{championshipId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Copa Furb 2027",
+  "slotsTotal": 12
+}
+
+### Enroll my team (the team id comes from the teams requests)
+POST {{host}}/championships/{{championshipId}}/teams
+Authorization: Bearer {{teamToken}}
+Content-Type: application/json
+
+{
+  "teamId": "{{teamId}}"
+}
+
+### Enroll another team as admin
+POST {{host}}/championships/{{championshipId}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teamId": "{{otherTeamId}}"
+}
+
+### List the enrolled teams
+GET {{host}}/championships/{{championshipId}}/teams
+Authorization: Bearer {{teamToken}}
+
+### Unenroll a team (only while the championship is open)
+DELETE {{host}}/championships/{{championshipId}}/teams/{{otherTeamId}}
+Authorization: Bearer {{adminToken}}
+
+### Start the championship (needs at least 2 enrolled teams)
+POST {{host}}/championships/{{championshipId}}/start
+Authorization: Bearer {{adminToken}}
+
+### Finish the championship
+POST {{host}}/championships/{{championshipId}}/finish
+Authorization: Bearer {{adminToken}}
+
+### Delete a championship (only when it has no matches)
+DELETE {{host}}/championships/{{championshipId}}
+Authorization: Bearer {{adminToken}}

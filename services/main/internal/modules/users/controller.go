@@ -1,15 +1,14 @@
 package users
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 
+	"futhub/main/internal/api"
 	"futhub/main/internal/entities"
 	"futhub/main/internal/platform/httpx"
 	"futhub/main/internal/platform/routing"
-	"futhub/main/internal/platform/security"
 )
 
 type controller struct {
@@ -24,13 +23,14 @@ func (c *controller) routes() []routing.Route {
 	return []routing.Route{
 		{Method: http.MethodGet, Path: "/", Handler: c.list, Auth: routing.Roles(entities.RoleAdmin)},
 		{Method: http.MethodGet, Path: "/{id}", Handler: c.getByID, Auth: routing.Authenticated()},
+		{Method: http.MethodPatch, Path: "/{id}/role", Handler: c.updateRole, Auth: routing.Roles(entities.RoleAdmin)},
 	}
 }
 
 func (c *controller) list(w http.ResponseWriter, r *http.Request) {
 	allUsers, err := c.uc.List(r.Context())
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 
@@ -44,38 +44,52 @@ func (c *controller) list(w http.ResponseWriter, r *http.Request) {
 func (c *controller) getByID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := httpx.GetVariable[uuid.UUID](r, "id")
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
+		return
+	}
+	caller, err := api.GetCaller(r)
+	if err != nil {
+		api.WriteError(w, err)
 		return
 	}
 
-	caller, _ := security.PrincipalFromContext(r.Context())
-	callerIsAdmin := caller.Role == string(entities.RoleAdmin)
-	callerIsRequestedUser := caller.UserID == requestedID.String()
+	callerIsAdmin := caller.Role == entities.RoleAdmin
+	callerIsRequestedUser := caller.UserID == requestedID
 	callerCanAccessUser := callerIsAdmin || callerIsRequestedUser
 	if !callerCanAccessUser {
-		httpx.WriteError(w, http.StatusForbidden, "forbidden", "you can only access your own user")
+		api.WriteError(w, entities.ErrForbidden)
 		return
 	}
 
 	user, err := c.uc.GetByID(r.Context(), requestedID)
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, NewUserResponse(user))
 }
 
-func writeError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, httpx.ErrInvalidRequest):
-		httpx.WriteError(w, http.StatusBadRequest, "invalid_request", err.Error())
-	case errors.Is(err, entities.ErrNotFound):
-		httpx.WriteError(w, http.StatusNotFound, "not_found", err.Error())
-	case errors.Is(err, entities.ErrEmailTaken):
-		httpx.WriteError(w, http.StatusConflict, "email_taken", err.Error())
-	case errors.Is(err, entities.ErrInvalidInput):
-		httpx.WriteError(w, http.StatusUnprocessableEntity, "invalid_input", err.Error())
-	default:
-		httpx.WriteError(w, http.StatusInternalServerError, "internal_error", "internal server error")
+func (c *controller) updateRole(w http.ResponseWriter, r *http.Request) {
+	userID, err := httpx.GetVariable[uuid.UUID](r, "id")
+	if err != nil {
+		api.WriteError(w, err)
+		return
 	}
+	input, err := httpx.ReadBody[entities.UpdateRoleInput](w, r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	caller, err := api.GetCaller(r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	user, err := c.uc.UpdateRole(r.Context(), caller, userID, input.Role)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, NewUserResponse(user))
 }

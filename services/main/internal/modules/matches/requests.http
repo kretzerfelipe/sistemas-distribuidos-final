@@ -1,0 +1,64 @@
+@host = http://localhost:8080
+@adminEmail = admin@futhub.local
+@adminPassword = admin12345
+@adminToken =
+@championshipId =
+@homeTeamId =
+@awayTeamId =
+@matchId =
+
+### Login as the admin (copy the accessToken into @adminToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Create a match (both teams must be enrolled; copy the id into @matchId)
+POST {{host}}/matches
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "championshipId": "{{championshipId}}",
+  "homeTeamId": "{{homeTeamId}}",
+  "awayTeamId": "{{awayTeamId}}",
+  "scheduledAt": "2027-03-01T15:00:00Z"
+}
+
+### Get a match
+GET {{host}}/matches/{{matchId}}
+Authorization: Bearer {{adminToken}}
+
+### List the matches of a championship
+GET {{host}}/championships/{{championshipId}}/matches
+Authorization: Bearer {{adminToken}}
+
+### Reschedule a match (only while scheduled)
+PUT {{host}}/matches/{{matchId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "scheduledAt": "2027-03-02T18:00:00Z"
+}
+
+### Start a match (the championship must be in progress)
+POST {{host}}/matches/{{matchId}}/start
+Authorization: Bearer {{adminToken}}
+
+### Finish a match with the final score
+POST {{host}}/matches/{{matchId}}/finish
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "homeScore": 2,
+  "awayScore": 1
+}
+
+### Delete a match (only while scheduled)
+DELETE {{host}}/matches/{{matchId}}
+Authorization: Bearer {{adminToken}}

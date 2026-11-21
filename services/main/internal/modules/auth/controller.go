@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"errors"
 	"net/http"
 
+	"futhub/main/internal/api"
 	"futhub/main/internal/entities"
 	"futhub/main/internal/modules/users"
 	"futhub/main/internal/platform/httpx"
@@ -30,13 +30,13 @@ func (c *controller) routes() []routing.Route {
 func (c *controller) register(w http.ResponseWriter, r *http.Request) {
 	input, err := httpx.ReadBody[entities.RegisterInput](w, r)
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 
 	user, err := c.uc.Register(r.Context(), *input)
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusCreated, users.NewUserResponse(user))
@@ -45,46 +45,29 @@ func (c *controller) register(w http.ResponseWriter, r *http.Request) {
 func (c *controller) login(w http.ResponseWriter, r *http.Request) {
 	input, err := httpx.ReadBody[entities.LoginInput](w, r)
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 
 	result, err := c.uc.Login(r.Context(), *input)
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, result)
 }
 
 func (c *controller) me(w http.ResponseWriter, r *http.Request) {
-	caller, isAuthenticated := security.PrincipalFromContext(r.Context())
+	principal, isAuthenticated := security.PrincipalFromContext(r.Context())
 	if !isAuthenticated {
-		httpx.WriteError(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+		api.WriteError(w, entities.ErrUnauthenticated)
 		return
 	}
 
-	user, err := c.uc.Me(r.Context(), caller.UserID)
+	user, err := c.uc.Me(r.Context(), principal.UserID)
 	if err != nil {
-		writeError(w, err)
+		api.WriteError(w, err)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, users.NewUserResponse(user))
-}
-
-func writeError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, httpx.ErrInvalidRequest):
-		httpx.WriteError(w, http.StatusBadRequest, "invalid_request", err.Error())
-	case errors.Is(err, entities.ErrInvalidCredentials):
-		httpx.WriteError(w, http.StatusUnauthorized, "invalid_credentials", err.Error())
-	case errors.Is(err, entities.ErrInvalidInput):
-		httpx.WriteError(w, http.StatusUnprocessableEntity, "invalid_input", err.Error())
-	case errors.Is(err, entities.ErrEmailTaken):
-		httpx.WriteError(w, http.StatusConflict, "email_taken", err.Error())
-	case errors.Is(err, entities.ErrNotFound):
-		httpx.WriteError(w, http.StatusNotFound, "not_found", err.Error())
-	default:
-		httpx.WriteError(w, http.StatusInternalServerError, "internal_error", "internal server error")
-	}
 }

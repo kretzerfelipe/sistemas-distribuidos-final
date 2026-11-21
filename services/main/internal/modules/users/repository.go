@@ -3,20 +3,19 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"futhub/main/internal/entities"
+	"futhub/main/internal/platform/db"
 	"futhub/main/internal/platform/util"
 )
 
-const (
-	pgUniqueViolationCode = "23505"
-	selectColumns         = "id, name, email, password_hash, role, created_at, updated_at"
-)
+const selectColumns = "id, name, email, password_hash, role, created_at, updated_at"
 
 type postgresRepository struct {
 	pool *pgxpool.Pool
@@ -32,7 +31,7 @@ func (r *postgresRepository) Insert(ctx context.Context, user *entities.User) er
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		user.ID, user.Name, user.Email, user.PasswordHash, string(user.Role), user.CreatedAt, user.UpdatedAt)
 	if err != nil {
-		if isUniqueViolation(err) {
+		if db.IsUniqueViolation(err) {
 			return entities.ErrEmailTaken
 		}
 		return util.SendMessageWithError("repository error inserting user", err)
@@ -82,6 +81,18 @@ func (r *postgresRepository) List(ctx context.Context) ([]entities.User, error) 
 	return allUsers, nil
 }
 
+func (r *postgresRepository) UpdateRole(ctx context.Context, id uuid.UUID, role entities.Role, updatedAt time.Time) error {
+	result, err := r.pool.Exec(ctx, "UPDATE users SET role = $2, updated_at = $3 WHERE id = $1", id, string(role), updatedAt)
+	if err != nil {
+		return util.SendMessageWithError("repository error updating user role", err)
+	}
+	noRowWasUpdated := result.RowsAffected() == 0
+	if noRowWasUpdated {
+		return fmt.Errorf("%w: user", entities.ErrNotFound)
+	}
+	return nil
+}
+
 func scanUser(row pgx.Row) (*entities.User, error) {
 	var user entities.User
 	var role string
@@ -99,9 +110,4 @@ func scanUser(row pgx.Row) (*entities.User, error) {
 	user.CreatedAt = user.CreatedAt.UTC()
 	user.UpdatedAt = user.UpdatedAt.UTC()
 	return &user, nil
-}
-
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolationCode
 }

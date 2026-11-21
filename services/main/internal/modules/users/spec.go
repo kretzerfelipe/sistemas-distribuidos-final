@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -18,6 +19,7 @@ type UseCase interface {
 	GetByEmail(ctx context.Context, email string) (*entities.User, error)
 	EmailIsRegistered(ctx context.Context, email string) (bool, error)
 	List(ctx context.Context) ([]entities.User, error)
+	UpdateRole(ctx context.Context, caller *entities.Caller, id uuid.UUID, role entities.Role) (*entities.User, error)
 }
 
 type Repository interface {
@@ -26,4 +28,5 @@ type Repository interface {
 	FindByEmail(ctx context.Context, email string) (*entities.User, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	List(ctx context.Context) ([]entities.User, error)
+	UpdateRole(ctx context.Context, id uuid.UUID, role entities.Role, updatedAt time.Time) error
 }

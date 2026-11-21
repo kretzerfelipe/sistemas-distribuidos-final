@@ -10,6 +10,7 @@ type Role string
 
 const (
 	RoleAdmin Role = "ADMIN"
+	RoleTeam  Role = "TEAM"
 	RoleUser  Role = "USER"
 )
 
@@ -30,10 +31,19 @@ type CreateInput struct {
 	Role         Role
 }
 
+type UpdateRoleInput struct {
+	Role Role `json:"role"`
+}
+
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Role      Role      `json:"role"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+type Caller struct {
+	UserID uuid.UUID
+	Role   Role
 }

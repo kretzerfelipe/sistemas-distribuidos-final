@@ -14,7 +14,7 @@ const (
 )
 
 func roleIsValid(role entities.Role) bool {
-	return role == entities.RoleAdmin || role == entities.RoleUser
+	return role == entities.RoleAdmin || role == entities.RoleTeam || role == entities.RoleUser
 }
 
 func NormalizeEmail(email string) string {
@@ -38,7 +38,7 @@ func validate(in entities.CreateInput) (*entities.CreateInput, error) {
 	case passwordHashIsMissing:
 		return nil, fmt.Errorf("%w: password hash is required", entities.ErrInvalidInput)
 	case roleIsInvalid:
-		return nil, fmt.Errorf("%w: role must be ADMIN or USER", entities.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: role must be ADMIN, TEAM or USER", entities.ErrInvalidInput)
 	}
 	return &in, nil
 }

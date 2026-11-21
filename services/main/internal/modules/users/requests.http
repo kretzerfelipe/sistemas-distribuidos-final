@@ -3,6 +3,8 @@
 @adminPassword = admin12345
 @userEmail = admin@futhub.local
 @userPassword = admin12345
+@teamEmail = team@example.com
+@teamPassword = s3cret-pass
 @userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiI1NjkyOTNlNS00ZTFmLTQxNmQtYmRiYy04MzkwOTVlMGI5MTkiLCJleHAiOjE3OTUyNzY4OTIsImlhdCI6MTc5NTI3MzI5Mn0.L5dQZRuM5z7JMKNR0OgeuI1OXWCcz3XRTozDGQcmNyo
 
 ### Register a regular user
@@ -44,3 +46,12 @@ Authorization: Bearer {{userToken}}
 ### Get any user as admin
 GET {{host}}/users/{{userId}}
 Authorization: Bearer {{adminToken}}
+
+### Change the role of a user as admin (USER, TEAM or ADMIN)
+PATCH {{host}}/users/{{userId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "TEAM"
+}

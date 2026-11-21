@@ -15,6 +15,10 @@ import (
 
 	"futhub/main/internal/app"
 	"futhub/main/internal/modules/auth"
+	"futhub/main/internal/modules/championships"
+	"futhub/main/internal/modules/matches"
+	"futhub/main/internal/modules/players"
+	"futhub/main/internal/modules/teams"
 	"futhub/main/internal/modules/users"
 	"futhub/main/internal/platform/config"
 	"futhub/main/internal/platform/db"
@@ -71,7 +75,12 @@ func run() error {
 		return err
 	}
 
-	router, err := newRouter(log, pool, usersModule, authModule)
+	playersModule := players.New(deps)
+	teamsModule := teams.New(deps, playersModule.Service())
+	championshipsModule := championships.New(deps, teamsModule.Service())
+	matchesModule := matches.New(deps, championshipsModule.Service())
+
+	router, err := newRouter(log, pool, usersModule, authModule, playersModule, teamsModule, championshipsModule, matchesModule)
 	if err != nil {
 		return err
 	}
