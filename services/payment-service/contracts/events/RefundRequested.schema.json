@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RefundRequested",
+  "description": "Routing key: refund.requested. Published by main when an approval arrives after the subscription was canceled or expired; consumed by payment.",
+  "allOf": [
+    {
+      "$ref": "../envelope.schema.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "RefundRequested"
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "subscriptionId",
+            "chargeId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "subscriptionId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "chargeId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

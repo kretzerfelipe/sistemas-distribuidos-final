@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PaymentApproved",
+  "description": "Routing key: payment.approved. Published by payment when the charge was approved; consumed by main and notification. amountCents and attempts are optional extras.",
+  "allOf": [
+    {
+      "$ref": "../envelope.schema.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "PaymentApproved"
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "subscriptionId",
+            "userId",
+            "chargeId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "subscriptionId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "userId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "chargeId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "amountCents": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "attempts": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

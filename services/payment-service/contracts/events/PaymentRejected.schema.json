@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PaymentRejected",
+  "description": "Routing key: payment.rejected. Published by payment when the charge could not be approved; consumed by main and notification. attempts is an optional extra.",
+  "allOf": [
+    {
+      "$ref": "../envelope.schema.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "PaymentRejected"
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "subscriptionId",
+            "userId",
+            "reason"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "subscriptionId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "userId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "attempts": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

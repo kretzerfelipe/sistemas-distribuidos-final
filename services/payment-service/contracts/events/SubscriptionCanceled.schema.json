@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SubscriptionCanceled",
+  "description": "Routing key: subscription.canceled. Published by main when the subscription is canceled or expires; consumed by payment and notification.",
+  "allOf": [
+    {
+      "$ref": "../envelope.schema.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "SubscriptionCanceled"
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "subscriptionId",
+            "userId",
+            "reason"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "subscriptionId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "userId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "reason": {
+              "enum": [
+                "PAYMENT_REJECTED",
+                "TIMEOUT"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

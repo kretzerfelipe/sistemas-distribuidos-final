@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PaymentRequested",
+  "description": "Routing key: payment.requested. Published by main when a subscription is created as PENDING; consumed by payment.",
+  "allOf": [
+    {
+      "$ref": "../envelope.schema.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "PaymentRequested"
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "subscriptionId",
+            "userId",
+            "amountCents"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "subscriptionId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "userId": {
+              "$ref": "../common.schema.json#/$defs/uuid"
+            },
+            "amountCents": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

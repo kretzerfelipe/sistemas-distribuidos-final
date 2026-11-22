@@ -1,0 +1,9 @@
+.git
+.idea
+.env
+frontend
+docs
+services/main
+services/notification
+**/target
+**/*.md

@@ -1,0 +1,170 @@
+name: futhub
+
+# Variables shared by the application services (inside the Docker network).
+# Database/Redis hosts are the container names MiniStack creates (resolved by DNS on the futhub-net network).
+x-app-env: &app-env
+  AWS_ENDPOINT_URL: http://ministack:4566
+  AWS_REGION: ${AWS_REGION:-us-east-1}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+
+x-app-depends: &app-depends
+  init: { condition: service_completed_successfully }
+
+services:
+  ministack:
+    image: ministackorg/ministack
+    ports:
+      - "4566:4566"
+    environment:
+      - MINISTACK_REGION=${AWS_REGION:-us-east-1}
+      # RDS and ElastiCache start real containers; they must be on the same network as the services
+      - DOCKER_NETWORK=futhub-net
+      # Keep database data in Docker volumes, so stopping a database container does not wipe it
+      - RDS_PERSIST=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [futhub-net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')"]
+      interval: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks: [futhub-net]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      retries: 20
+
+  # Runs once and exits: creates the S3 bucket, the RDS databases and the ElastiCache cluster in MiniStack.
+  init:
+    image: amazon/aws-cli
+    depends_on:
+      ministack: { condition: service_healthy }
+    environment:
+      AWS_ENDPOINT_URL: http://ministack:4566
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-futhub-photos}
+      DB_USER: ${DB_USER:-futhub}
+      DB_PASSWORD: ${DB_PASSWORD:-futhub123}
+    volumes:
+      - ./infra/ministack:/infra:ro
+    networks: [futhub-net]
+    entrypoint: ["sh", "/infra/init.sh"]
+
+  # ---------------------------------------------------------------------------
+  # Application services. They stay in the "apps" profile until each one has a Dockerfile.
+  # When they are ready: remove the `profiles` line and `docker compose up -d` starts everything.
+  # To try them earlier:  docker compose --profile apps up -d --build
+  # ---------------------------------------------------------------------------
+  main:
+    build: ./services/main
+    depends_on:
+      <<: *app-depends
+      rabbitmq: { condition: service_healthy }
+    environment:
+      <<: *app-env
+      HTTP_PORT: 8080
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      EVENTS_EXCHANGE: ${EVENTS_EXCHANGE:-futhub.events}
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-500}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
+      BCRYPT_COST: ${BCRYPT_COST:-12}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@futhub.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+      DATABASE_URL: postgres://${DB_USER:-futhub}:${DB_PASSWORD:-futhub123}@${DB_HOST_MAIN:-ministack-rds-281afe4a44d7-instance-futhub-main}:5432/db_main
+      REDIS_URL: redis://${REDIS_HOST:-ministack-elasticache-000000000000-us-east-1-futhub-cache}:6379
+      S3_BUCKET: ${S3_BUCKET:-futhub-photos}
+      PAYMENT_TIMEOUT_SECONDS: ${PAYMENT_TIMEOUT_SECONDS:-30}
+      EXPIRATION_JOB_INTERVAL_SECONDS: 5
+      SUBSCRIPTION_PRICE_CENTS: 1990
+    ports:
+      - "8080:8080"
+    networks: [futhub-net]
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - main
+    ports:
+      - "5173:80"
+    networks: [futhub-net]
+
+  payment:
+    build:
+      context: .
+      dockerfile: services/payment/Dockerfile
+    depends_on:
+      <<: *app-depends
+      rabbitmq: { condition: service_healthy }
+    deploy:
+      replicas: 2               # R4: two replicas consuming from the same queue
+    environment:
+      <<: *app-env
+      HTTP_PORT: 8080
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      EVENTS_EXCHANGE: ${EVENTS_EXCHANGE:-futhub.events}
+      CONSUMER_QUEUE: payment.q
+      RETRY_QUEUE: payment.retry
+      DEAD_LETTER_QUEUE: payment.dlq
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      PREFETCH: 1
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-500}
+      CONTRACTS_DIR: /app/contracts
+      DATABASE_URL: postgres://${DB_USER:-futhub}:${DB_PASSWORD:-futhub123}@${DB_HOST_PAYMENT:-ministack-rds-281afe4a44d7-instance-futhub-payment}:5432/db_payment
+      GATEWAY_LATENCY_MS: ${GATEWAY_LATENCY_MS:-500}
+      GATEWAY_LATENCY_JITTER_MS: ${GATEWAY_LATENCY_JITTER_MS:-300}
+      GATEWAY_FAILURE_RATE: ${GATEWAY_FAILURE_RATE:-0.2}
+      GATEWAY_TIMEOUT_MS: ${GATEWAY_TIMEOUT_MS:-5000}
+      GATEWAY_MAX_ATTEMPTS: ${GATEWAY_MAX_ATTEMPTS:-3}
+    ports:
+      - "8083-8090:8080"        # one host port per replica (GET /charges/{id} for debug)
+    networks: [futhub-net]
+
+  notification:
+    build:
+      context: .
+      dockerfile: services/notification/Dockerfile
+    depends_on:
+      <<: *app-depends
+      rabbitmq: { condition: service_healthy }
+    environment:
+      <<: *app-env
+      HTTP_PORT: 8080
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      CONSUMER_QUEUE: notification.q
+      RETRY_QUEUE: notification.retry
+      DEAD_LETTER_QUEUE: notification.dlq
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      PREFETCH: ${PREFETCH:-5}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
+      DATABASE_URL: postgres://${DB_USER:-futhub}:${DB_PASSWORD:-futhub123}@${DB_HOST_NOTIFICATION:-ministack-rds-281afe4a44d7-instance-futhub-notification}:5432/db_notification
+      REDIS_URL: redis://${REDIS_HOST:-ministack-elasticache-000000000000-us-east-1-futhub-cache}:6379
+      SNAPSHOT_INTERVAL_SECONDS: ${SNAPSHOT_INTERVAL_SECONDS:-300}
+      PREMIUM_USER_IDS: ${PREMIUM_USER_IDS:-}
+      ADMIN_IS_PREMIUM: ${ADMIN_IS_PREMIUM:-true}
+      CONTRACTS_DIR: /app/contracts
+    ports:
+      - "8082:8080"
+    networks: [futhub-net]
+
+volumes:
+  rabbitmq-data:
+
+networks:
+  futhub-net:
+    name: futhub-net
