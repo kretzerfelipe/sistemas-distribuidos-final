@@ -70,7 +70,9 @@ services:
   # To try them earlier:  docker compose --profile apps up -d --build
   # ---------------------------------------------------------------------------
   main:
-    build: ./services/main
+    build:
+      context: .
+      dockerfile: services/main/Dockerfile
     depends_on:
       <<: *app-depends
       rabbitmq: { condition: service_healthy }
@@ -105,19 +107,34 @@ services:
     networks: [futhub-net]
 
   payment:
-    profiles: ["apps"]
-    build: ./services/payment
-    depends_on: *app-depends
+    build:
+      context: .
+      dockerfile: services/payment/Dockerfile
+    depends_on:
+      <<: *app-depends
+      rabbitmq: { condition: service_healthy }
     deploy:
       replicas: 2               # R4: two replicas consuming from the same queue
     environment:
       <<: *app-env
       HTTP_PORT: 8080
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      EVENTS_EXCHANGE: ${EVENTS_EXCHANGE:-futhub.events}
+      CONSUMER_QUEUE: payment.q
+      RETRY_QUEUE: payment.retry
+      DEAD_LETTER_QUEUE: payment.dlq
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      PREFETCH: 1
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-500}
+      CONTRACTS_DIR: /app/contracts
       DATABASE_URL: postgres://${DB_USER:-futhub}:${DB_PASSWORD:-futhub123}@${DB_HOST_PAYMENT:-ministack-rds-281afe4a44d7-instance-futhub-payment}:5432/db_payment
       GATEWAY_LATENCY_MS: ${GATEWAY_LATENCY_MS:-500}
       GATEWAY_LATENCY_JITTER_MS: ${GATEWAY_LATENCY_JITTER_MS:-300}
       GATEWAY_FAILURE_RATE: ${GATEWAY_FAILURE_RATE:-0.2}
       GATEWAY_TIMEOUT_MS: ${GATEWAY_TIMEOUT_MS:-5000}
+      GATEWAY_MAX_ATTEMPTS: ${GATEWAY_MAX_ATTEMPTS:-3}
+    ports:
+      - "8083-8090:8080"        # one host port per replica (GET /charges/{id} for debug)
     networks: [futhub-net]
 
   notification:

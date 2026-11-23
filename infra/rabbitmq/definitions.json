@@ -1,23 +1,188 @@
 {
   "rabbit_version": "3.13.0",
   "users": [
-    { "name": "guest", "password": "guest", "tags": ["administrator"] }
+    {
+      "name": "guest",
+      "password": "guest",
+      "tags": [
+        "administrator"
+      ]
+    }
   ],
   "vhosts": [
-    { "name": "/" }
+    {
+      "name": "/"
+    }
   ],
   "permissions": [
-    { "user": "guest", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*" }
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
   ],
   "exchanges": [
-    { "name": "futhub.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+    {
+      "name": "futhub.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
   ],
   "queues": [
-    { "name": "notification.q",     "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
-    { "name": "notification.retry", "vhost": "/", "durable": true, "auto_delete": false, "arguments": { "x-message-ttl": 5000, "x-dead-letter-exchange": "", "x-dead-letter-routing-key": "notification.q" } },
-    { "name": "notification.dlq",   "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
+    {
+      "name": "notification.q",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "notification.q"
+      }
+    },
+    {
+      "name": "notification.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main.q",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "main.q"
+      }
+    },
+    {
+      "name": "main.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "payment.q",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "payment.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "payment.q"
+      }
+    },
+    {
+      "name": "payment.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
   ],
   "bindings": [
-    { "source": "futhub.events", "vhost": "/", "destination": "notification.q", "destination_type": "queue", "routing_key": "match.*", "arguments": {} }
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "notification.q",
+      "destination_type": "queue",
+      "routing_key": "match.*",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "main.q",
+      "destination_type": "queue",
+      "routing_key": "payment.approved",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "main.q",
+      "destination_type": "queue",
+      "routing_key": "payment.rejected",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "payment.q",
+      "destination_type": "queue",
+      "routing_key": "payment.requested",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "payment.q",
+      "destination_type": "queue",
+      "routing_key": "refund.requested",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "payment.q",
+      "destination_type": "queue",
+      "routing_key": "subscription.canceled",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "notification.q",
+      "destination_type": "queue",
+      "routing_key": "subscription.activated",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "notification.q",
+      "destination_type": "queue",
+      "routing_key": "subscription.canceled",
+      "arguments": {}
+    },
+    {
+      "source": "futhub.events",
+      "vhost": "/",
+      "destination": "notification.q",
+      "destination_type": "queue",
+      "routing_key": "refund.completed",
+      "arguments": {}
+    }
   ]
 }

@@ -1,6 +1,7 @@
 package com.futhub.payment.messaging;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -71,7 +72,9 @@ public class MessageMover {
     }
 
     private void publishAndConfirm(String queue, Message message) {
-        CorrelationData correlation = new CorrelationData(message.getMessageProperties().getMessageId());
+        String messageId = message.getMessageProperties().getMessageId();
+        String confirmationId = messageId == null || messageId.isBlank() ? UUID.randomUUID().toString() : messageId;
+        CorrelationData correlation = new CorrelationData(confirmationId);
         template.send("", queue, message, correlation);
         try {
             CorrelationData.Confirm confirm = correlation.getFuture().get(confirmTimeoutMs, TimeUnit.MILLISECONDS);
