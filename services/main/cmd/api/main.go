@@ -18,15 +18,19 @@ import (
 	"futhub/main/internal/modules/championships"
 	"futhub/main/internal/modules/matches"
 	"futhub/main/internal/modules/players"
+	"futhub/main/internal/modules/subscriptions"
 	"futhub/main/internal/modules/teams"
 	"futhub/main/internal/modules/users"
 	"futhub/main/internal/platform/config"
+	"futhub/main/internal/platform/contracts"
 	"futhub/main/internal/platform/db"
 	"futhub/main/internal/platform/httpx"
+	"futhub/main/internal/platform/inbox"
 	"futhub/main/internal/platform/logger"
 	"futhub/main/internal/platform/messaging"
 	"futhub/main/internal/platform/outbox"
 	"futhub/main/internal/platform/security"
+	"futhub/main/internal/platform/storage"
 )
 
 const (
@@ -69,12 +73,24 @@ func run() error {
 	publisher := outbox.NewPublisher(outbox.NewStore(pool), broker, cfg.EventsExchange, cfg.OutboxPollInterval, cfg.OutboxBatchSize, log)
 	go publisher.Run(ctx)
 
+	photoStorage, err := storage.NewS3Client(ctx, storage.Settings{
+		Endpoint:        cfg.StorageEndpoint,
+		Region:          cfg.StorageRegion,
+		AccessKeyID:     cfg.StorageAccessKeyID,
+		SecretAccessKey: cfg.StorageSecretAccessKey,
+		Bucket:          cfg.StorageBucket,
+	})
+	if err != nil {
+		return err
+	}
+
 	deps := app.Deps{
 		Config:       cfg,
 		Logger:       log,
 		DB:           pool,
 		Transactions: db.NewTransactionManager(pool),
 		Outbox:       outbox.NewWriter(pool),
+		Storage:      photoStorage,
 		Hasher:       security.NewBcryptHasher(cfg.BcryptCost),
 		Tokens:       security.NewTokenManager(cfg.JWTSecret, cfg.JWTExpiration),
 	}
@@ -89,8 +105,27 @@ func run() error {
 	teamsModule := teams.New(deps, playersModule.Service())
 	championshipsModule := championships.New(deps, teamsModule.Service())
 	matchesModule := matches.New(deps, championshipsModule.Service(), teamsModule.Service(), playersModule.Service())
+	subscriptionsModule := subscriptions.New(deps)
 
-	router, err := newRouter(log, pool, broker, usersModule, authModule, playersModule, teamsModule, championshipsModule, matchesModule)
+	validator, err := contracts.NewValidator(cfg.ContractsDirectory)
+	if err != nil {
+		return err
+	}
+	messageHandler := subscriptions.NewMessageHandler(
+		validator, inbox.NewDeduplicator(pool, deps.Transactions), subscriptionsModule.Service(), log)
+	consumer := messaging.NewConsumer(messaging.ConsumerSettings{
+		URL:             cfg.RabbitMQURL,
+		Queue:           cfg.ConsumerQueue,
+		RetryQueue:      cfg.RetryQueue,
+		DeadLetterQueue: cfg.DeadLetterQueue,
+		Prefetch:        cfg.Prefetch,
+		MaxRetries:      cfg.MaxRetries,
+	}, messageHandler, log)
+	go consumer.Run(ctx)
+	go subscriptionsModule.RunExpiration(ctx, cfg.ExpirationInterval, log)
+
+	router, err := newRouter(log, pool, brokerConnections{broker, consumer},
+		usersModule, authModule, playersModule, teamsModule, championshipsModule, matchesModule, subscriptionsModule)
 	if err != nil {
 		return err
 	}
@@ -163,6 +198,15 @@ type pinger interface {
 
 type brokerState interface {
 	IsConnected() bool
+}
+
+type brokerConnections struct {
+	publisher brokerState
+	consumer  brokerState
+}
+
+func (b brokerConnections) IsConnected() bool {
+	return b.publisher.IsConnected() && b.consumer.IsConnected()
 }
 
 func healthHandler(database pinger, broker brokerState, log *slog.Logger) http.HandlerFunc {

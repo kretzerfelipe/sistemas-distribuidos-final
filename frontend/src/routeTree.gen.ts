@@ -15,7 +15,9 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppGamesRouteImport } from './routes/_app/games'
 import { Route as AppInvitationsRouteImport } from './routes/_app/invitations'
+import { Route as AppNotificationsRouteImport } from './routes/_app/notifications'
 import { Route as AppPlayerRouteImport } from './routes/_app/player'
+import { Route as AppPremiumRouteImport } from './routes/_app/premium'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
 import { Route as AppChampionshipsIndexRouteImport } from './routes/_app/championships.index'
 import { Route as AppChampionshipsChampionshipIdRouteImport } from './routes/_app/championships.$championshipId'
@@ -52,9 +54,19 @@ const AppInvitationsRoute = AppInvitationsRouteImport.update({
   path: '/invitations',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPlayerRoute = AppPlayerRouteImport.update({
   id: '/player',
   path: '/player',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPremiumRoute = AppPremiumRouteImport.update({
+  id: '/premium',
+  path: '/premium',
   getParentRoute: () => AppRoute,
 } as any)
 const AppUsersRoute = AppUsersRouteImport.update({
@@ -95,7 +107,9 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/games': typeof AppGamesRoute
   '/invitations': typeof AppInvitationsRoute
+  '/notifications': typeof AppNotificationsRoute
   '/player': typeof AppPlayerRoute
+  '/premium': typeof AppPremiumRoute
   '/users': typeof AppUsersRoute
   '/championships/$championshipId': typeof AppChampionshipsChampionshipIdRoute
   '/matches/$matchId': typeof AppMatchesMatchIdRoute
@@ -108,7 +122,9 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/games': typeof AppGamesRoute
   '/invitations': typeof AppInvitationsRoute
+  '/notifications': typeof AppNotificationsRoute
   '/player': typeof AppPlayerRoute
+  '/premium': typeof AppPremiumRoute
   '/users': typeof AppUsersRoute
   '/': typeof AppIndexRoute
   '/championships/$championshipId': typeof AppChampionshipsChampionshipIdRoute
@@ -124,7 +140,9 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_app/games': typeof AppGamesRoute
   '/_app/invitations': typeof AppInvitationsRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/player': typeof AppPlayerRoute
+  '/_app/premium': typeof AppPremiumRoute
   '/_app/users': typeof AppUsersRoute
   '/_app/': typeof AppIndexRoute
   '/_app/championships/$championshipId': typeof AppChampionshipsChampionshipIdRoute
@@ -141,7 +159,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/games'
     | '/invitations'
+    | '/notifications'
     | '/player'
+    | '/premium'
     | '/users'
     | '/championships/$championshipId'
     | '/matches/$matchId'
@@ -154,7 +174,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/games'
     | '/invitations'
+    | '/notifications'
     | '/player'
+    | '/premium'
     | '/users'
     | '/'
     | '/championships/$championshipId'
@@ -169,7 +191,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/_app/games'
     | '/_app/invitations'
+    | '/_app/notifications'
     | '/_app/player'
+    | '/_app/premium'
     | '/_app/users'
     | '/_app/'
     | '/_app/championships/$championshipId'
@@ -229,11 +253,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInvitationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/player': {
       id: '/_app/player'
       path: '/player'
       fullPath: '/player'
       preLoaderRoute: typeof AppPlayerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/premium': {
+      id: '/_app/premium'
+      path: '/premium'
+      fullPath: '/premium'
+      preLoaderRoute: typeof AppPremiumRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/users': {
@@ -284,7 +322,9 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppGamesRoute: typeof AppGamesRoute
   AppInvitationsRoute: typeof AppInvitationsRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppPlayerRoute: typeof AppPlayerRoute
+  AppPremiumRoute: typeof AppPremiumRoute
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
   AppChampionshipsChampionshipIdRoute: typeof AppChampionshipsChampionshipIdRoute
@@ -297,7 +337,9 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppGamesRoute: AppGamesRoute,
   AppInvitationsRoute: AppInvitationsRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppPlayerRoute: AppPlayerRoute,
+  AppPremiumRoute: AppPremiumRoute,
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
   AppChampionshipsChampionshipIdRoute: AppChampionshipsChampionshipIdRoute,

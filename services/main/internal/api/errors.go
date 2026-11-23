@@ -38,6 +38,10 @@ var errorMappings = []errorMapping{
 	{entities.ErrChampionshipHasMatches, http.StatusConflict, "championship_has_matches"},
 	{entities.ErrTeamAlreadyEnrolled, http.StatusConflict, "team_already_enrolled"},
 	{entities.ErrTeamNotEnrolled, http.StatusConflict, "team_not_enrolled"},
+	{entities.ErrSubscriptionInForce, http.StatusConflict, "subscription_in_force"},
+	{entities.ErrUnsupportedPhoto, http.StatusUnsupportedMediaType, "unsupported_photo"},
+	{entities.ErrPhotoTooLarge, http.StatusRequestEntityTooLarge, "photo_too_large"},
+	{entities.ErrStorageUnavailable, http.StatusServiceUnavailable, "storage_unavailable"},
 }
 
 func WriteError(w http.ResponseWriter, err error) {

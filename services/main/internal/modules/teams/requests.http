@@ -59,6 +59,20 @@ Content-Type: application/json
   "city": "Itajai"
 }
 
+### Upload the team photo (PNG, JPEG or WebP up to 2 MB; the file is sent as the raw body, stored in the S3 bucket)
+PUT {{host}}/teams/{{teamId}}/photo
+Authorization: Bearer {{teamToken}}
+Content-Type: image/png
+
+< ./team-photo.png
+
+### Read the team photo (public, so it works in an img tag)
+GET {{host}}/teams/{{teamId}}/photo
+
+### Remove the team photo
+DELETE {{host}}/teams/{{teamId}}/photo
+Authorization: Bearer {{teamToken}}
+
 ### Invite a player (copy the invitation id into @invitationId; the player id comes from the players requests)
 POST {{host}}/teams/{{teamId}}/invitations
 Authorization: Bearer {{teamToken}}

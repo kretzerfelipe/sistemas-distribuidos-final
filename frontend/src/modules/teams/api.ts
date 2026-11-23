@@ -54,6 +54,22 @@ export function useSaveTeam(teamId?: string) {
   })
 }
 
+export function useUploadTeamPhoto(teamId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => api<Team>(`/teams/${teamId}/photo`, { method: 'PUT', file }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teams'] }),
+  })
+}
+
+export function useRemoveTeamPhoto(teamId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<Team>(`/teams/${teamId}/photo`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teams'] }),
+  })
+}
+
 export function useDeleteTeam() {
   const queryClient = useQueryClient()
   return useMutation({

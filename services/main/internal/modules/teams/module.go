@@ -18,7 +18,7 @@ type Module struct {
 
 func New(d app.Deps, players PlayerService) *Module {
 	repo := newPostgresRepository(d.DB)
-	uc := newUseCase(repo, players)
+	uc := newUseCase(repo, players, d.Storage)
 	return &Module{
 		uc:     uc,
 		ctrl:   newController(uc),

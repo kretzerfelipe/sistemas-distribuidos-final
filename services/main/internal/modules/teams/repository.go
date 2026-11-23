@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	teamColumns       = "id, owner_id, name, city, created_at, updated_at"
+	teamColumns       = "id, owner_id, name, city, COALESCE(photo_key, ''), COALESCE(photo_content_type, ''), photo_updated_at, created_at, updated_at"
 	invitationColumns = "i.id, i.team_id, t.name, i.player_id, i.status, i.created_at, i.updated_at"
 	invitationSource  = "FROM team_invitations i JOIN teams t ON t.id = i.team_id"
 )
@@ -170,6 +170,28 @@ func (r *postgresRepository) DeleteMembershipByPlayer(ctx context.Context, playe
 	return nil
 }
 
+func (r *postgresRepository) UpdatePhoto(ctx context.Context, id uuid.UUID, key, contentType string, updatedAt time.Time) error {
+	result, err := r.pool.Exec(ctx,
+		"UPDATE teams SET photo_key = $2, photo_content_type = $3, photo_updated_at = $4 WHERE id = $1", id, key, contentType, updatedAt)
+	if err != nil {
+		return util.SendMessageWithError("repository error updating team photo", err)
+	}
+	teamWasNotFound := result.RowsAffected() == 0
+	if teamWasNotFound {
+		return fmt.Errorf("%w: team", entities.ErrNotFound)
+	}
+	return nil
+}
+
+func (r *postgresRepository) ClearPhoto(ctx context.Context, id uuid.UUID) error {
+	_, err := r.pool.Exec(ctx,
+		"UPDATE teams SET photo_key = NULL, photo_content_type = NULL, photo_updated_at = NULL WHERE id = $1", id)
+	if err != nil {
+		return util.SendMessageWithError("repository error clearing team photo", err)
+	}
+	return nil
+}
+
 func (r *postgresRepository) FindTeamByPlayer(ctx context.Context, playerID uuid.UUID) (*entities.Team, error) {
 	row := r.pool.QueryRow(ctx,
 		"SELECT "+teamColumns+" FROM teams WHERE id = (SELECT team_id FROM team_members WHERE player_id = $1)", playerID)
@@ -307,7 +329,8 @@ func collectInvitations(rows pgx.Rows) ([]entities.Invitation, error) {
 func scanTeam(row pgx.Row) (*entities.Team, error) {
 	var team entities.Team
 
-	err := row.Scan(&team.ID, &team.OwnerID, &team.Name, &team.City, &team.CreatedAt, &team.UpdatedAt)
+	err := row.Scan(&team.ID, &team.OwnerID, &team.Name, &team.City, &team.PhotoKey, &team.PhotoContentType,
+		&team.PhotoUpdatedAt, &team.CreatedAt, &team.UpdatedAt)
 	if err != nil {
 		noRowWasFound := errors.Is(err, pgx.ErrNoRows)
 		if noRowWasFound {
@@ -318,6 +341,10 @@ func scanTeam(row pgx.Row) (*entities.Team, error) {
 
 	team.CreatedAt = team.CreatedAt.UTC()
 	team.UpdatedAt = team.UpdatedAt.UTC()
+	if team.PhotoUpdatedAt != nil {
+		photoUpdatedAt := team.PhotoUpdatedAt.UTC()
+		team.PhotoUpdatedAt = &photoUpdatedAt
+	}
 	return &team, nil
 }
 

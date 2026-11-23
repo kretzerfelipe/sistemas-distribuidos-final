@@ -15,6 +15,7 @@ import { championshipMatchesQuery } from '@/modules/matches/api'
 import { MatchForm } from '@/modules/matches/match-form'
 import { MatchRow } from '@/modules/matches/match-row'
 import { myTeamsQuery, teamsQuery } from '@/modules/teams/api'
+import { TeamAvatar } from '@/modules/teams/team-avatar'
 import { useTeamsById } from '@/modules/teams/use-teams-by-id'
 import {
   championshipQuery,
@@ -166,9 +167,12 @@ export function ChampionshipDetailPage({ championshipId }: { championshipId: str
           <ul className="divide-y rounded-xl border bg-card">
             {enrolledTeams.data.map((team) => (
               <li key={team.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{team.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">{team.city}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <TeamAvatar team={team} />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{team.name}</p>
+                    <p className="truncate text-sm text-muted-foreground">{team.city}</p>
+                  </div>
                 </div>
                 {teamCanBeRemoved(team.ownerId) ? (
                   <Button

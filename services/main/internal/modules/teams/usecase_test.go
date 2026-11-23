@@ -265,12 +265,14 @@ type testEnvironment struct {
 	useCase UseCase
 	repo    *inMemoryRepository
 	players *fakePlayers
+	storage *fakeStorage
 }
 
 func newTestEnvironment() testEnvironment {
 	repo := newInMemoryRepository()
 	players := newFakePlayers()
-	return testEnvironment{useCase: newUseCase(repo, players), repo: repo, players: players}
+	photos := newFakeStorage()
+	return testEnvironment{useCase: newUseCase(repo, players, photos), repo: repo, players: players, storage: photos}
 }
 
 func newTeamCaller() *entities.Caller {

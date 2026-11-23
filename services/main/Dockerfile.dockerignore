@@ -1,0 +1,10 @@
+.git
+.idea
+.env
+frontend
+docs
+services/notification
+services/payment
+**/node_modules
+**/*_test.go
+**/*.md

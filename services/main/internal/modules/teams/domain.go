@@ -2,6 +2,7 @@ package teams
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"futhub/main/internal/entities"
@@ -10,7 +11,33 @@ import (
 const (
 	maxTeamNameLength = 100
 	maxCityLength     = 100
+	MaxPhotoBytes     = 2 << 20
+	sniffedBytes      = 512
 )
+
+var allowedPhotoTypes = map[string]struct{}{"image/png": {}, "image/jpeg": {}, "image/webp": {}}
+
+func validatePhoto(data []byte) (string, error) {
+	photoIsEmpty := len(data) == 0
+	photoIsTooLarge := len(data) > MaxPhotoBytes
+	switch {
+	case photoIsEmpty:
+		return "", fmt.Errorf("%w: the photo is empty", entities.ErrInvalidInput)
+	case photoIsTooLarge:
+		return "", entities.ErrPhotoTooLarge
+	}
+
+	head := data
+	if len(head) > sniffedBytes {
+		head = head[:sniffedBytes]
+	}
+	contentType := http.DetectContentType(head)
+	_, isAllowed := allowedPhotoTypes[contentType]
+	if !isAllowed {
+		return "", entities.ErrUnsupportedPhoto
+	}
+	return contentType, nil
+}
 
 func validate(in entities.SaveTeamInput) (*entities.SaveTeamInput, error) {
 	in.Name = strings.TrimSpace(in.Name)

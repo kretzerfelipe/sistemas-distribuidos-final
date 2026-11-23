@@ -1,0 +1,42 @@
+@host = http://localhost:8080
+@userEmail = pele@example.com
+@userPassword = s3cret-pass
+@adminEmail = admin@futhub.local
+@adminPassword = admin12345
+@userToken =
+@adminToken =
+@subscriptionId =
+
+### Login as the user who will subscribe (copy the accessToken into @userToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Subscribe to premium (answers 202 with status PENDING; copy the id into @subscriptionId)
+POST {{host}}/subscriptions
+Authorization: Bearer {{userToken}}
+
+### Check the subscription until it leaves PENDING (ACTIVE once the payment is approved)
+GET {{host}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{userToken}}
+
+### Get my latest subscription
+GET {{host}}/subscriptions/mine
+Authorization: Bearer {{userToken}}
+
+### Login as the admin (copy the accessToken into @adminToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Read any subscription as the admin
+GET {{host}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{adminToken}}

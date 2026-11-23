@@ -1,13 +1,15 @@
 FROM golang:1.27-alpine AS build
-WORKDIR /src
-COPY go.mod go.sum ./
+WORKDIR /src/services/main
+COPY services/main/go.mod services/main/go.sum ./
 RUN go mod download
-COPY . .
+COPY services/main/ ./
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
 
 FROM alpine:3.20
 RUN adduser -D -u 10001 app
 COPY --from=build /out/api /usr/local/bin/api
+COPY contracts /app/contracts
+ENV CONTRACTS_DIR=/app/contracts
 USER app
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \

@@ -7,12 +7,20 @@ import (
 )
 
 type Team struct {
-	ID        uuid.UUID
-	OwnerID   uuid.UUID
-	Name      string
-	City      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID               uuid.UUID
+	OwnerID          uuid.UUID
+	Name             string
+	City             string
+	PhotoKey         string
+	PhotoContentType string
+	PhotoUpdatedAt   *time.Time
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+type TeamPhoto struct {
+	ContentType string
+	Data        []byte
 }
 
 type SaveTeamInput struct {
@@ -21,11 +29,12 @@ type SaveTeamInput struct {
 }
 
 type TeamResponse struct {
-	ID        uuid.UUID `json:"id"`
-	OwnerID   uuid.UUID `json:"ownerId"`
-	Name      string    `json:"name"`
-	City      string    `json:"city"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID             uuid.UUID  `json:"id"`
+	OwnerID        uuid.UUID  `json:"ownerId"`
+	Name           string     `json:"name"`
+	City           string     `json:"city"`
+	PhotoUpdatedAt *time.Time `json:"photoUpdatedAt"`
+	CreatedAt      time.Time  `json:"createdAt"`
 }
 
 type InvitationStatus string

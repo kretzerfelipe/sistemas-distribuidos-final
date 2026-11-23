@@ -17,6 +17,14 @@ const (
 	defaultBcryptCost           = 12
 	defaultOutboxPollMillis     = 500
 	defaultOutboxBatchSize      = 100
+	defaultConsumerQueue        = "main.q"
+	defaultRetryQueue           = "main.retry"
+	defaultDeadLetterQueue      = "main.dlq"
+	defaultMaxRetries           = 3
+	defaultPrefetch             = 5
+	defaultPaymentTimeoutSecs   = 30
+	defaultExpirationSecs       = 5
+	defaultSubscriptionPrice    = 1990
 
 	minJWTSecretLength = 32
 	minBcryptCost      = 4
@@ -42,6 +50,24 @@ type Config struct {
 	EventsExchange     string
 	OutboxPollInterval time.Duration
 	OutboxBatchSize    int
+
+	ConsumerQueue   string
+	RetryQueue      string
+	DeadLetterQueue string
+	MaxRetries      int
+	Prefetch        int
+
+	ContractsDirectory string
+
+	PaymentTimeout       time.Duration
+	ExpirationInterval   time.Duration
+	SubscriptionPriceCts int
+
+	StorageEndpoint        string
+	StorageRegion          string
+	StorageAccessKeyID     string
+	StorageSecretAccessKey string
+	StorageBucket          string
 }
 
 func Load() (Config, error) {
@@ -64,6 +90,27 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	maxRetries, err := getEnvInt("MAX_RETRIES", defaultMaxRetries)
+	if err != nil {
+		return Config{}, err
+	}
+	prefetch, err := getEnvInt("MAIN_PREFETCH", defaultPrefetch)
+	if err != nil {
+		return Config{}, err
+	}
+	paymentTimeoutSeconds, err := getEnvInt("PAYMENT_TIMEOUT_SECONDS", defaultPaymentTimeoutSecs)
+	if err != nil {
+		return Config{}, err
+	}
+	expirationSeconds, err := getEnvInt("EXPIRATION_JOB_INTERVAL_SECONDS", defaultExpirationSecs)
+	if err != nil {
+		return Config{}, err
+	}
+	subscriptionPrice, err := getEnvInt("SUBSCRIPTION_PRICE_CENTS", defaultSubscriptionPrice)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		HTTPPort:           getEnv("HTTP_PORT", defaultHTTPPort),
 		LogLevel:           getEnv("LOG_LEVEL", defaultLogLevel),
@@ -78,6 +125,23 @@ func Load() (Config, error) {
 		EventsExchange:     getEnv("EVENTS_EXCHANGE", defaultEventsExchange),
 		OutboxPollInterval: time.Duration(outboxPollMillis) * time.Millisecond,
 		OutboxBatchSize:    outboxBatchSize,
+
+		ConsumerQueue:      getEnv("MAIN_CONSUMER_QUEUE", defaultConsumerQueue),
+		RetryQueue:         getEnv("MAIN_RETRY_QUEUE", defaultRetryQueue),
+		DeadLetterQueue:    getEnv("MAIN_DEAD_LETTER_QUEUE", defaultDeadLetterQueue),
+		MaxRetries:         maxRetries,
+		Prefetch:           prefetch,
+		ContractsDirectory: os.Getenv("CONTRACTS_DIR"),
+
+		PaymentTimeout:       time.Duration(paymentTimeoutSeconds) * time.Second,
+		ExpirationInterval:   time.Duration(expirationSeconds) * time.Second,
+		SubscriptionPriceCts: subscriptionPrice,
+
+		StorageEndpoint:        os.Getenv("AWS_ENDPOINT_URL"),
+		StorageRegion:          getEnv("AWS_REGION", "us-east-1"),
+		StorageAccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+		StorageSecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		StorageBucket:          getEnv("S3_BUCKET", "futhub-photos"),
 	}
 	return cfg, cfg.validate()
 }
@@ -91,7 +155,21 @@ func (c Config) validate() error {
 	adminPasswordIsMissing := c.AdminEmail != "" && c.AdminPassword == ""
 	outboxSettingsAreNotPositive := c.OutboxPollInterval <= 0 || c.OutboxBatchSize <= 0
 
+	subscriptionSettingsAreNotPositive := c.PaymentTimeout <= 0 || c.ExpirationInterval <= 0 || c.SubscriptionPriceCts <= 0
+	consumerSettingsAreInvalid := c.MaxRetries < 0 || c.Prefetch <= 0
+
+	storageCredentialsAreMissing := c.StorageAccessKeyID == "" || c.StorageSecretAccessKey == ""
+
 	var errs []error
+	if storageCredentialsAreMissing {
+		errs = append(errs, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required"))
+	}
+	if subscriptionSettingsAreNotPositive {
+		errs = append(errs, errors.New("PAYMENT_TIMEOUT_SECONDS, EXPIRATION_JOB_INTERVAL_SECONDS and SUBSCRIPTION_PRICE_CENTS must be greater than zero"))
+	}
+	if consumerSettingsAreInvalid {
+		errs = append(errs, errors.New("MAX_RETRIES must not be negative and MAIN_PREFETCH must be greater than zero"))
+	}
 	if databaseURLIsMissing {
 		errs = append(errs, errors.New("DATABASE_URL is required"))
 	}

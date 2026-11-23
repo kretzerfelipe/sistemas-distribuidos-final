@@ -2,21 +2,108 @@ package teams
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
 
 	"futhub/main/internal/entities"
+	"futhub/main/internal/platform/storage"
 	"futhub/main/internal/platform/util"
 )
 
 type useCase struct {
 	repo    Repository
 	players PlayerService
+	storage storage.Client
 }
 
-func newUseCase(repo Repository, players PlayerService) UseCase {
-	return &useCase{repo: repo, players: players}
+func newUseCase(repo Repository, players PlayerService, photos storage.Client) UseCase {
+	return &useCase{repo: repo, players: players, storage: photos}
+}
+
+func (uc *useCase) SetPhoto(ctx context.Context, caller *entities.Caller, id uuid.UUID, data []byte) (*entities.Team, error) {
+	team, err := uc.findTeamManagedBy(ctx, caller, id)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error finding team to set the photo", err)
+	}
+
+	contentType, err := validatePhoto(data)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error validating team photo", err)
+	}
+
+	newKey := fmt.Sprintf("teams/%s/%s", team.ID, uuid.NewString())
+	err = uc.storage.Put(ctx, newKey, contentType, data)
+	if err != nil {
+		return nil, storageFailure("use case error storing team photo", err)
+	}
+
+	updatedAt := time.Now().UTC()
+	err = uc.repo.UpdatePhoto(ctx, team.ID, newKey, contentType, updatedAt)
+	if err != nil {
+		uc.discard(ctx, newKey)
+		return nil, util.SendMessageWithError("use case error saving team photo", err)
+	}
+
+	uc.discard(ctx, team.PhotoKey)
+	team.PhotoKey, team.PhotoContentType, team.PhotoUpdatedAt = newKey, contentType, &updatedAt
+	return team, nil
+}
+
+func (uc *useCase) RemovePhoto(ctx context.Context, caller *entities.Caller, id uuid.UUID) (*entities.Team, error) {
+	team, err := uc.findTeamManagedBy(ctx, caller, id)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error finding team to remove the photo", err)
+	}
+
+	err = uc.repo.ClearPhoto(ctx, team.ID)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error clearing team photo", err)
+	}
+
+	uc.discard(ctx, team.PhotoKey)
+	team.PhotoKey, team.PhotoContentType, team.PhotoUpdatedAt = "", "", nil
+	return team, nil
+}
+
+func (uc *useCase) GetPhoto(ctx context.Context, id uuid.UUID) (*storage.Object, error) {
+	team, err := uc.repo.FindTeamByID(ctx, id)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error finding team to read the photo", err)
+	}
+
+	teamHasNoPhoto := team.PhotoKey == ""
+	if teamHasNoPhoto {
+		return nil, fmt.Errorf("%w: team photo", entities.ErrNotFound)
+	}
+
+	object, err := uc.storage.Get(ctx, team.PhotoKey)
+	if errors.Is(err, storage.ErrObjectNotFound) {
+		return nil, fmt.Errorf("%w: team photo", entities.ErrNotFound)
+	}
+	if err != nil {
+		return nil, storageFailure("use case error reading team photo", err)
+	}
+	return object, nil
+}
+
+func (uc *useCase) discard(ctx context.Context, key string) {
+	nothingToDiscard := key == ""
+	if nothingToDiscard {
+		return
+	}
+	err := uc.storage.Delete(ctx, key)
+	if err != nil {
+		slog.Warn("could not delete an old team photo", "key", key, "error", err)
+	}
+}
+
+func storageFailure(message string, err error) error {
+	slog.Error(message, "error", err)
+	return entities.ErrStorageUnavailable
 }
 
 func (uc *useCase) Create(ctx context.Context, caller *entities.Caller, in entities.SaveTeamInput) (*entities.Team, error) {
@@ -111,6 +198,8 @@ func (uc *useCase) Delete(ctx context.Context, caller *entities.Caller, id uuid.
 	if err != nil {
 		return util.SendMessageWithError("use case error deleting team", err)
 	}
+
+	uc.discard(ctx, team.PhotoKey)
 	return nil
 }
 
