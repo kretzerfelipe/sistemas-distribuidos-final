@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react'
 import { Link, Outlet, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarDaysIcon, LogOutIcon, MailIcon, MenuIcon, ShieldIcon, ShirtIcon, TrophyIcon, UserRoundIcon, UsersIcon } from 'lucide-react'
+import { BellIcon, CalendarDaysIcon, LogOutIcon, SparklesIcon, MailIcon, MenuIcon, ShieldIcon, ShirtIcon, TrophyIcon, UserRoundIcon, UsersIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { clearSession, useSession } from '@/core/auth/session'
@@ -9,7 +9,7 @@ import { roleLabels } from '@/lib/format'
 import type { Role } from '@/types'
 
 type NavItem = {
-  to: '/games' | '/championships' | '/teams' | '/player' | '/invitations' | '/users'
+  to: '/games' | '/championships' | '/premium' | '/notifications' | '/teams' | '/player' | '/invitations' | '/users'
   label: string
   icon: ComponentType<{ className?: string }>
   roles?: Role[]
@@ -19,6 +19,8 @@ const navItems: NavItem[] = [
   { to: '/games', label: 'Jogos', icon: CalendarDaysIcon },
   { to: '/championships', label: 'Campeonatos', icon: TrophyIcon },
   { to: '/teams', label: 'Times', icon: UsersIcon },
+  { to: '/premium', label: 'Premium', icon: SparklesIcon, roles: ['USER', 'TEAM'] },
+  { to: '/notifications', label: 'Notificações', icon: BellIcon, roles: ['USER', 'TEAM'] },
   { to: '/player', label: 'Meu jogador', icon: ShirtIcon, roles: ['USER'] },
   { to: '/invitations', label: 'Convites', icon: MailIcon, roles: ['USER'] },
   { to: '/users', label: 'Usuários', icon: ShieldIcon, roles: ['ADMIN'] },

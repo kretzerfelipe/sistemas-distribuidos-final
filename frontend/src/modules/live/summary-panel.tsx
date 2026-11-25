@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { LockIcon } from 'lucide-react'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/state'
 import { eventTypeLabels } from '@/lib/format'
@@ -22,6 +23,9 @@ export function SummaryPanel({ summary, isPending, error, nameOf }: SummaryPanel
           <p className="text-muted-foreground">
             Você vê um resumo da partida com os lances principais, atualizado de tempos em tempos.
           </p>
+          <Link to="/premium" className="mt-1 inline-block font-medium text-primary underline underline-offset-4">
+            Conhecer o premium
+          </Link>
         </div>
       </div>
 

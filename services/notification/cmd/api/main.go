@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"futhub/notification/internal/accounts"
 	"futhub/notification/internal/config"
 	"futhub/notification/internal/contracts"
 	"futhub/notification/internal/db"
@@ -71,7 +72,11 @@ func run() error {
 
 	hub := live.NewHub()
 	processor := live.NewProcessor(store, hub, log)
-	messageHandler := live.NewMessageHandler(validator, db.NewDeduplicator(pool), processor, log)
+	accountsStore := accounts.NewPostgresStore(pool)
+	typeRouter := live.NewTypeRouter()
+	typeRouter.Route(live.MatchMessageTypes, processor)
+	typeRouter.Route(accounts.HandledMessageTypes, accounts.NewProcessor(accountsStore))
+	messageHandler := live.NewMessageHandler(validator, db.NewDeduplicator(pool), typeRouter, log)
 
 	consumer := messaging.NewConsumer(messaging.Settings{
 		URL:             cfg.RabbitMQURL,
@@ -92,6 +97,7 @@ func run() error {
 	router.Use(httpx.CorrelationID, httpx.RequestLogger(log), httpx.Recover(log))
 	router.Get("/health", healthHandler(pool, store, consumer, log))
 	liveHandler.RegisterRoutes(router)
+	accounts.NewHandler(accountsStore, security.NewTokenParser(cfg.JWTSecret), log).RegisterRoutes(router)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.HTTPPort,

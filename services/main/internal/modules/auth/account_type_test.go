@@ -61,3 +61,53 @@ func TestRegisterNeverCreatesAnAdminOrAnUnknownType(t *testing.T) {
 		})
 	}
 }
+
+func registerByAdminWithAccountType(env testEnvironment, accountType entities.Role) (*entities.User, error) {
+	return env.useCase.RegisterByAdmin(context.Background(), entities.RegisterInput{
+		Name:        "Created By Admin",
+		Email:       "created@example.com",
+		Password:    validPassword,
+		AccountType: accountType,
+	})
+}
+
+func TestRegisterByAdminCreatesAnyKindOfUser(t *testing.T) {
+	kinds := map[string]entities.Role{
+		"admin": entities.RoleAdmin,
+		"team":  entities.RoleTeam,
+		"user":  entities.RoleUser,
+		"empty": "",
+	}
+
+	for name, accountType := range kinds {
+		t.Run(name, func(t *testing.T) {
+			env := newTestEnvironment(t)
+
+			user, err := registerByAdminWithAccountType(env, accountType)
+
+			wantedRole := accountType
+			if accountType == "" {
+				wantedRole = entities.RoleUser
+			}
+			if err != nil || user.Role != wantedRole {
+				t.Errorf("want role %s, got %+v (err=%v)", wantedRole, user, err)
+			}
+		})
+	}
+}
+
+func TestRegisterByAdminRejectsAnUnknownTypeAndAShortPassword(t *testing.T) {
+	env := newTestEnvironment(t)
+
+	_, unknownTypeErr := registerByAdminWithAccountType(env, entities.Role("COACH"))
+	_, shortPasswordErr := env.useCase.RegisterByAdmin(context.Background(), entities.RegisterInput{
+		Name: "Created By Admin", Email: "created@example.com", Password: "short", AccountType: entities.RoleUser,
+	})
+
+	if !errors.Is(unknownTypeErr, entities.ErrInvalidInput) || !errors.Is(shortPasswordErr, entities.ErrInvalidInput) {
+		t.Errorf("want ErrInvalidInput twice, got %v and %v", unknownTypeErr, shortPasswordErr)
+	}
+	if len(env.users.usersByEmail) != 0 {
+		t.Error("nothing must be stored")
+	}
+}

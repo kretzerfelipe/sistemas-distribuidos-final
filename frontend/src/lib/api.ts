@@ -17,6 +17,7 @@ export class ApiError extends Error {
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
+  file?: File
   signal?: AbortSignal
 }
 
@@ -24,11 +25,12 @@ type ErrorBody = { error?: { code?: string; message?: string } }
 
 function createApi(baseUrl: string) {
   return async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { method = 'GET', body, signal } = options
+    const { method = 'GET', body, file, signal } = options
     const token = getToken()
 
     const headers: Record<string, string> = {}
     if (body !== undefined) headers['Content-Type'] = 'application/json'
+    if (file) headers['Content-Type'] = file.type
     if (token) headers.Authorization = `Bearer ${token}`
 
     let response: Response
@@ -36,7 +38,7 @@ function createApi(baseUrl: string) {
       response = await fetch(`${baseUrl}${path}`, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: file ?? (body === undefined ? undefined : JSON.stringify(body)),
         signal,
       })
     } catch (cause) {

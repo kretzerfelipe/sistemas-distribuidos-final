@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SubscriptionActivated",
+  "description": "Routing key: subscription.activated. Published by main when the payment of a pending subscription was approved; the user is now premium. Consumed by notification.",
+  "allOf": [
+    { "$ref": "../envelope.schema.json" },
+    {
+      "properties": {
+        "type": { "const": "SubscriptionActivated" },
+        "version": { "const": 1 },
+        "payload": {
+          "type": "object",
+          "required": ["subscriptionId", "userId"],
+          "additionalProperties": false,
+          "properties": {
+            "subscriptionId": { "$ref": "../common.schema.json#/$defs/uuid" },
+            "userId": { "$ref": "../common.schema.json#/$defs/uuid" }
+          }
+        }
+      }
+    }
+  ]
+}

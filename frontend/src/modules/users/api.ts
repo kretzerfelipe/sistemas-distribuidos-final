@@ -15,3 +15,18 @@ export function useUpdateRole() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: usersQuery.queryKey }),
   })
 }
+
+export type CreateUserInput = {
+  name: string
+  email: string
+  password: string
+  accountType: Role
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateUserInput) => api<User>('/auth/users', { method: 'POST', body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: usersQuery.queryKey }),
+  })
+}

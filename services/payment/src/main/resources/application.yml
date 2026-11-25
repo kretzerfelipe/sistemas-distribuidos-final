@@ -1,0 +1,44 @@
+server:
+  port: ${PAYMENT_HTTP_PORT:${HTTP_PORT:8080}}
+  shutdown: graceful
+
+spring:
+  application:
+    name: payment
+  main:
+    banner-mode: off
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: payment
+
+payment:
+  database-url: ${PAYMENT_DATABASE_URL:${DATABASE_URL:postgres://futhub:futhub123@localhost:15433/db_payment}}
+  contracts-dir: ${CONTRACTS_DIR:}
+  broker:
+    url: ${RABBITMQ_URL:amqp://guest:guest@localhost:5672/}
+    exchange: ${EVENTS_EXCHANGE:futhub.events}
+    consumer-queue: ${PAYMENT_CONSUMER_QUEUE:${CONSUMER_QUEUE:payment.q}}
+    retry-queue: ${PAYMENT_RETRY_QUEUE:${RETRY_QUEUE:payment.retry}}
+    dead-letter-queue: ${PAYMENT_DEAD_LETTER_QUEUE:${DEAD_LETTER_QUEUE:payment.dlq}}
+    max-retries: ${MAX_RETRIES:3}
+    prefetch: ${PAYMENT_PREFETCH:${PREFETCH:1}}
+    concurrency: ${CONSUMER_CONCURRENCY:1}
+    confirm-timeout-ms: ${PUBLISH_CONFIRM_TIMEOUT_MS:5000}
+  gateway:
+    latency-ms: ${GATEWAY_LATENCY_MS:500}
+    latency-jitter-ms: ${GATEWAY_LATENCY_JITTER_MS:300}
+    failure-rate: ${GATEWAY_FAILURE_RATE:0.2}
+    timeout-ms: ${GATEWAY_TIMEOUT_MS:5000}
+    max-attempts: ${GATEWAY_MAX_ATTEMPTS:3}
+    retry-backoff-ms: ${GATEWAY_RETRY_BACKOFF_MS:200}
+  outbox:
+    poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:500}
+    batch-size: ${OUTBOX_BATCH_SIZE:100}

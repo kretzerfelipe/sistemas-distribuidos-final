@@ -21,7 +21,9 @@ import {
   useInvitePlayer,
   useRemovePlayer,
 } from './api'
+import { TeamAvatar } from './team-avatar'
 import { TeamForm } from './team-form'
+import { TeamPhotoControl } from './team-photo-control'
 
 function Roster({ teamId, canManage }: { teamId: string; canManage: boolean }) {
   const roster = useQuery(teamPlayersQuery(teamId))
@@ -202,6 +204,11 @@ export function TeamDetailPage({ teamId }: { teamId: string }) {
           ) : null
         }
       />
+
+      <div className="mb-8 flex flex-wrap items-center gap-4">
+        <TeamAvatar team={data} className="size-20 text-xl" />
+        {canManage ? <TeamPhotoControl team={data} /> : null}
+      </div>
 
       <Roster teamId={teamId} canManage={canManage} />
       {canInvite ? <Invitations teamId={teamId} /> : null}

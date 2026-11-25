@@ -1,7 +1,10 @@
 package teams
 
 import (
+	"errors"
+	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 
@@ -30,6 +33,10 @@ func (c *controller) routes() []routing.Route {
 		{Method: http.MethodGet, Path: "/teams/{id}", Handler: c.getByID, Auth: routing.Authenticated()},
 		{Method: http.MethodPut, Path: "/teams/{id}", Handler: c.update, Auth: manageTeams},
 		{Method: http.MethodDelete, Path: "/teams/{id}", Handler: c.delete, Auth: manageTeams},
+
+		{Method: http.MethodGet, Path: "/teams/{id}/photo", Handler: c.getPhoto, Auth: routing.Public},
+		{Method: http.MethodPut, Path: "/teams/{id}/photo", Handler: c.setPhoto, Auth: manageTeams},
+		{Method: http.MethodDelete, Path: "/teams/{id}/photo", Handler: c.removePhoto, Auth: manageTeams},
 
 		{Method: http.MethodGet, Path: "/teams/{id}/players", Handler: c.listPlayers, Auth: routing.Authenticated()},
 		{Method: http.MethodDelete, Path: "/teams/{id}/players/{playerId}", Handler: c.removePlayer, Auth: manageTeams},
@@ -193,6 +200,81 @@ func (c *controller) removePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusNoContent, nil)
+}
+
+const photoCacheControl = "public, max-age=86400"
+
+func (c *controller) setPhoto(w http.ResponseWriter, r *http.Request) {
+	teamID, err := httpx.GetVariable[uuid.UUID](r, "id")
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	caller, err := api.GetCaller(r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, MaxPhotoBytes)
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			api.WriteError(w, entities.ErrPhotoTooLarge)
+			return
+		}
+		api.WriteError(w, httpx.ErrInvalidRequest)
+		return
+	}
+
+	team, err := c.uc.SetPhoto(r.Context(), caller, teamID, data)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, NewTeamResponse(team))
+}
+
+func (c *controller) removePhoto(w http.ResponseWriter, r *http.Request) {
+	teamID, err := httpx.GetVariable[uuid.UUID](r, "id")
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	caller, err := api.GetCaller(r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	team, err := c.uc.RemovePhoto(r.Context(), caller, teamID)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, NewTeamResponse(team))
+}
+
+func (c *controller) getPhoto(w http.ResponseWriter, r *http.Request) {
+	teamID, err := httpx.GetVariable[uuid.UUID](r, "id")
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	photo, err := c.uc.GetPhoto(r.Context(), teamID)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	defer photo.Body.Close()
+
+	w.Header().Set("Content-Type", photo.ContentType)
+	w.Header().Set("Content-Length", strconv.FormatInt(photo.Size, 10))
+	w.Header().Set("Cache-Control", photoCacheControl)
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, photo.Body)
 }
 
 func (c *controller) getMyTeam(w http.ResponseWriter, r *http.Request) {

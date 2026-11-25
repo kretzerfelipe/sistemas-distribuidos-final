@@ -7,10 +7,18 @@ import (
 	"github.com/google/uuid"
 
 	"futhub/main/internal/entities"
+	"futhub/main/internal/platform/storage"
 )
 
 func NewTeamResponse(team *entities.Team) entities.TeamResponse {
-	return entities.TeamResponse{ID: team.ID, OwnerID: team.OwnerID, Name: team.Name, City: team.City, CreatedAt: team.CreatedAt}
+	return entities.TeamResponse{
+		ID:             team.ID,
+		OwnerID:        team.OwnerID,
+		Name:           team.Name,
+		City:           team.City,
+		PhotoUpdatedAt: team.PhotoUpdatedAt,
+		CreatedAt:      team.CreatedAt,
+	}
 }
 
 func NewInvitationResponse(invitation *entities.Invitation) entities.InvitationResponse {
@@ -45,6 +53,10 @@ type UseCase interface {
 	LeaveTeam(ctx context.Context, caller *entities.Caller) error
 	GetMyTeam(ctx context.Context, caller *entities.Caller) (*entities.Team, error)
 
+	SetPhoto(ctx context.Context, caller *entities.Caller, id uuid.UUID, data []byte) (*entities.Team, error)
+	RemovePhoto(ctx context.Context, caller *entities.Caller, id uuid.UUID) (*entities.Team, error)
+	GetPhoto(ctx context.Context, id uuid.UUID) (*storage.Object, error)
+
 	Invite(ctx context.Context, caller *entities.Caller, teamID, playerID uuid.UUID) (*entities.Invitation, error)
 	ListTeamInvitations(ctx context.Context, caller *entities.Caller, teamID uuid.UUID) ([]entities.Invitation, error)
 	CancelInvitation(ctx context.Context, caller *entities.Caller, teamID, invitationID uuid.UUID) (*entities.Invitation, error)
@@ -61,6 +73,8 @@ type Repository interface {
 	ListTeamsByOwner(ctx context.Context, ownerID uuid.UUID) ([]entities.Team, error)
 	UpdateTeam(ctx context.Context, team *entities.Team) error
 	DeleteTeam(ctx context.Context, id uuid.UUID) error
+	UpdatePhoto(ctx context.Context, id uuid.UUID, key, contentType string, updatedAt time.Time) error
+	ClearPhoto(ctx context.Context, id uuid.UUID) error
 
 	ListMemberPlayerIDs(ctx context.Context, teamID uuid.UUID) ([]uuid.UUID, error)
 	PlayerIsInTeam(ctx context.Context, playerID uuid.UUID) (bool, error)

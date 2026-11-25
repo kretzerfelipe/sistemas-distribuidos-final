@@ -4,8 +4,26 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type Executor interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, arguments ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, arguments ...any) pgx.Row
+}
+
+type transactionKey struct{}
+
+func ExecutorFrom(ctx context.Context, pool *pgxpool.Pool) Executor {
+	tx, inTransaction := ctx.Value(transactionKey{}).(pgx.Tx)
+	if inTransaction {
+		return tx
+	}
+	return pool
+}
 
 type Deduplicator struct {
 	pool *pgxpool.Pool
@@ -32,7 +50,7 @@ func (d *Deduplicator) RunOnce(ctx context.Context, messageID string, effect fun
 		return false, nil
 	}
 
-	if err := effect(ctx); err != nil {
+	if err := effect(context.WithValue(ctx, transactionKey{}, tx)); err != nil {
 		return false, err
 	}
 	if err := tx.Commit(ctx); err != nil {

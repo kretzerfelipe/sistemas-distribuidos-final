@@ -30,6 +30,7 @@ export type Team = {
   ownerId: string
   name: string
   city: string
+  photoUpdatedAt: string | null
   createdAt: string
 }
 
@@ -66,6 +67,26 @@ export type Match = {
   status: MatchStatus
   homeScore: number
   awayScore: number
+  createdAt: string
+}
+
+export type SubscriptionStatus = 'PENDING' | 'ACTIVE' | 'CANCELED' | 'EXPIRED'
+
+export type Subscription = {
+  id: string
+  status: SubscriptionStatus
+  premium: boolean
+  reason?: 'PAYMENT_REJECTED' | 'TIMEOUT'
+  amountCents: number
+  expiresAt: string
+  createdAt: string
+}
+
+export type AppNotification = {
+  id: string
+  type: string
+  message: string
+  read: boolean
   createdAt: string
 }
 

@@ -10,6 +10,7 @@ import (
 	"futhub/main/internal/platform/db"
 	"futhub/main/internal/platform/outbox"
 	"futhub/main/internal/platform/security"
+	"futhub/main/internal/platform/storage"
 )
 
 type Deps struct {
@@ -18,6 +19,7 @@ type Deps struct {
 	DB           *pgxpool.Pool
 	Transactions *db.TransactionManager
 	Outbox       outbox.Writer
+	Storage      storage.Client
 	Hasher       security.PasswordHasher
 	Tokens       *security.TokenManager
 }

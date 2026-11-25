@@ -29,6 +29,10 @@ func CorrelationID(next http.Handler) http.Handler {
 	})
 }
 
+func WithCorrelationID(ctx context.Context, correlationID string) context.Context {
+	return context.WithValue(ctx, correlationKey, correlationID)
+}
+
 func CorrelationIDFrom(ctx context.Context) string {
 	correlationID, _ := ctx.Value(correlationKey).(string)
 	return correlationID

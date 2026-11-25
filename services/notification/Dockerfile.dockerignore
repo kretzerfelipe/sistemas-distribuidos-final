@@ -1,8 +1,10 @@
 .git
 .idea
 .env
+frontend
 services/main
 services/payment
 docs
+**/node_modules
 **/*_test.go
 **/*.md

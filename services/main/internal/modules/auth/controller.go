@@ -22,6 +22,7 @@ func newController(uc UseCase) *controller {
 func (c *controller) routes() []routing.Route {
 	return []routing.Route{
 		{Method: http.MethodPost, Path: "/register", Handler: c.register, Auth: routing.Public},
+		{Method: http.MethodPost, Path: "/users", Handler: c.registerByAdmin, Auth: routing.Roles(entities.RoleAdmin)},
 		{Method: http.MethodPost, Path: "/login", Handler: c.login, Auth: routing.Public},
 		{Method: http.MethodGet, Path: "/me", Handler: c.me, Auth: routing.Authenticated()},
 	}
@@ -35,6 +36,21 @@ func (c *controller) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := c.uc.Register(r.Context(), *input)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, users.NewUserResponse(user))
+}
+
+func (c *controller) registerByAdmin(w http.ResponseWriter, r *http.Request) {
+	input, err := httpx.ReadBody[entities.RegisterInput](w, r)
+	if err != nil {
+		api.WriteError(w, err)
+		return
+	}
+
+	user, err := c.uc.RegisterByAdmin(r.Context(), *input)
 	if err != nil {
 		api.WriteError(w, err)
 		return

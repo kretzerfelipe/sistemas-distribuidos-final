@@ -17,6 +17,7 @@ type UserService interface {
 
 type UseCase interface {
 	Register(ctx context.Context, in entities.RegisterInput) (*entities.User, error)
+	RegisterByAdmin(ctx context.Context, in entities.RegisterInput) (*entities.User, error)
 	Login(ctx context.Context, in entities.LoginInput) (*entities.LoginResult, error)
 	Me(ctx context.Context, userID string) (*entities.User, error)
 	SeedAdmin(ctx context.Context, name, email, password string) (created bool, err error)

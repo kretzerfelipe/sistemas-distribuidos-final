@@ -20,11 +20,11 @@ type Deduplicator interface {
 type MessageHandler struct {
 	validator    SchemaValidator
 	deduplicator Deduplicator
-	processor    *Processor
+	processor    EnvelopeProcessor
 	log          *slog.Logger
 }
 
-func NewMessageHandler(validator SchemaValidator, deduplicator Deduplicator, processor *Processor, log *slog.Logger) *MessageHandler {
+func NewMessageHandler(validator SchemaValidator, deduplicator Deduplicator, processor EnvelopeProcessor, log *slog.Logger) *MessageHandler {
 	return &MessageHandler{validator: validator, deduplicator: deduplicator, processor: processor, log: log}
 }
 

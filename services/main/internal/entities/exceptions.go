@@ -26,4 +26,10 @@ var (
 	ErrChampionshipHasMatches = util.NewBusinessError("championship has matches")
 	ErrTeamAlreadyEnrolled    = util.NewBusinessError("team is already enrolled in this championship")
 	ErrTeamNotEnrolled        = util.NewBusinessError("team is not enrolled in this championship")
+
+	ErrSubscriptionInForce = util.NewBusinessError("user already has a pending or active subscription")
+
+	ErrUnsupportedPhoto   = util.NewBusinessError("photo must be a PNG, JPEG or WebP image")
+	ErrPhotoTooLarge      = util.NewBusinessError("photo is too large")
+	ErrStorageUnavailable = util.NewBusinessError("photo storage is unavailable, try again shortly")
 )

@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/page-header'
 import { useSession } from '@/core/auth/session'
 import type { Team } from '@/types'
 import { myTeamsQuery, teamsQuery } from './api'
+import { TeamAvatar } from './team-avatar'
 import { TeamForm } from './team-form'
 
 function TeamRow({ team }: { team: Team }) {
@@ -19,9 +20,12 @@ function TeamRow({ team }: { team: Team }) {
         params={{ teamId: team.id }}
         className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-secondary/60 focus-visible:bg-secondary/60 focus-visible:outline-none"
       >
-        <div className="min-w-0">
-          <p className="truncate font-medium">{team.name}</p>
-          <p className="truncate text-sm text-muted-foreground">{team.city}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <TeamAvatar team={team} />
+          <div className="min-w-0">
+            <p className="truncate font-medium">{team.name}</p>
+            <p className="truncate text-sm text-muted-foreground">{team.city}</p>
+          </div>
         </div>
         <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
       </Link>
