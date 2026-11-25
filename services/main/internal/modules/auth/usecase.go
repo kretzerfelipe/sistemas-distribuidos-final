@@ -58,6 +58,24 @@ func (uc *useCase) Register(ctx context.Context, in entities.RegisterInput) (*en
 	return user, nil
 }
 
+func (uc *useCase) RegisterByAdmin(ctx context.Context, in entities.RegisterInput) (*entities.User, error) {
+	accountType := in.AccountType
+	accountTypeWasNotInformed := accountType == ""
+	if accountTypeWasNotInformed {
+		accountType = entities.RoleUser
+	}
+	accountTypeIsAllowed := accountType == entities.RoleUser || accountType == entities.RoleTeam || accountType == entities.RoleAdmin
+	if !accountTypeIsAllowed {
+		return nil, fmt.Errorf("%w: accountType must be USER, TEAM or ADMIN", entities.ErrInvalidInput)
+	}
+
+	user, err := uc.createUser(ctx, in.Name, in.Email, in.Password, accountType)
+	if err != nil {
+		return nil, util.SendMessageWithError("use case error registering user by admin", err)
+	}
+	return user, nil
+}
+
 func (uc *useCase) Login(ctx context.Context, in entities.LoginInput) (*entities.LoginResult, error) {
 	user, err := uc.users.GetByEmail(ctx, in.Email)
 	if err != nil {

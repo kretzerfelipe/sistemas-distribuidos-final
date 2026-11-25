@@ -48,16 +48,31 @@ export const teamInvitationsQuery = (id: string) =>
 export function useSaveTeam(teamId?: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: SaveTeamInput) =>
-      api<Team>(teamId ? `/teams/${teamId}` : '/teams', { method: teamId ? 'PUT' : 'POST', body: input }),
+    mutationFn: async ({ photo, ...input }: SaveTeamInput & { photo?: File | null }) => {
+      const team = await api<Team>(teamId ? `/teams/${teamId}` : '/teams', {
+        method: teamId ? 'PUT' : 'POST',
+        body: input,
+      })
+      if (!photo) return { team, photoFailed: false }
+      try {
+        await uploadTeamPhoto(team.id, photo)
+        return { team, photoFailed: false }
+      } catch {
+        return { team, photoFailed: true }
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teams'] }),
   })
+}
+
+export function uploadTeamPhoto(teamId: string, file: File) {
+  return api<Team>(`/teams/${teamId}/photo`, { method: 'PUT', file })
 }
 
 export function useUploadTeamPhoto(teamId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (file: File) => api<Team>(`/teams/${teamId}/photo`, { method: 'PUT', file }),
+    mutationFn: (file: File) => uploadTeamPhoto(teamId, file),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teams'] }),
   })
 }

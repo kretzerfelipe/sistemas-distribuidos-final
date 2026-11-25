@@ -6,6 +6,7 @@
 @teamEmail = team@example.com
 @teamPassword = s3cret-pass
 @userToken =
+@adminToken =
 
 ### Health check
 GET {{host}}/health
@@ -50,5 +51,26 @@ Content-Type: application/json
   "name": "Furb FC Owner",
   "email": "{{teamEmail}}",
   "password": "{{teamPassword}}",
+  "accountType": "TEAM"
+}
+
+### Login as the admin (copy the accessToken into @adminToken)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Create a user as the admin (accountType can be USER, TEAM or ADMIN)
+POST {{host}}/auth/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Created By Admin",
+  "email": "created@example.com",
+  "password": "s3cret-pass",
   "accountType": "TEAM"
 }

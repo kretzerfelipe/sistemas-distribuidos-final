@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/format'
 import type { Team } from '@/types'
 import { useRemoveTeamPhoto, useUploadTeamPhoto } from './api'
+import { acceptedPhotoTypes, photoFileProblem } from './photo-file'
 
-const maxPhotoBytes = 2 * 1024 * 1024
-const acceptedTypes = ['image/png', 'image/jpeg', 'image/webp']
 
 export function TeamPhotoControl({ team }: { team: Team }) {
   const input = useRef<HTMLInputElement>(null)
@@ -19,12 +18,9 @@ export function TeamPhotoControl({ team }: { team: Team }) {
     if (input.current) input.current.value = ''
     if (!file) return
 
-    if (!acceptedTypes.includes(file.type)) {
-      toast.error('Use uma imagem PNG, JPEG ou WebP.')
-      return
-    }
-    if (file.size > maxPhotoBytes) {
-      toast.error('A foto é grande demais. O limite é de 2 MB.')
+    const problem = photoFileProblem(file)
+    if (problem) {
+      toast.error(problem)
       return
     }
     upload.mutate(file, {
@@ -38,7 +34,7 @@ export function TeamPhotoControl({ team }: { team: Team }) {
       <input
         ref={input}
         type="file"
-        accept={acceptedTypes.join(',')}
+        accept={acceptedPhotoTypes.join(',')}
         className="sr-only"
         aria-label="Escolher foto do time"
         onChange={(event) => choose(event.target.files?.[0])}

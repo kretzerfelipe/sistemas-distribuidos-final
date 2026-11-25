@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { PlusIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/native-select'
 import { ErrorState, LoadingRows } from '@/components/state'
 import { PageHeader } from '@/components/page-header'
@@ -7,6 +10,7 @@ import { useSession } from '@/core/auth/session'
 import { errorMessage, formatDate, roleLabels } from '@/lib/format'
 import type { Role } from '@/types'
 import { useUpdateRole, usersQuery } from './api'
+import { UserForm } from './user-form'
 
 const roles: Role[] = ['USER', 'TEAM', 'ADMIN']
 
@@ -14,6 +18,7 @@ export function UsersPage() {
   const session = useSession()
   const users = useQuery(usersQuery)
   const updateRole = useUpdateRole()
+  const [formIsOpen, setFormIsOpen] = useState(false)
 
   const changeRole = (id: string, role: Role) =>
     updateRole.mutate(
@@ -26,7 +31,16 @@ export function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Usuários" description="O novo papel vale a partir do próximo login da pessoa." />
+      <PageHeader
+        title="Usuários"
+        description="O novo papel vale a partir do próximo login da pessoa."
+        actions={
+          <Button onClick={() => setFormIsOpen(true)}>
+            <PlusIcon />
+            Novo usuário
+          </Button>
+        }
+      />
 
       {users.isPending ? <LoadingRows /> : null}
       {users.isError ? <ErrorState error={users.error} onRetry={() => users.refetch()} /> : null}
@@ -56,6 +70,8 @@ export function UsersPage() {
           ))}
         </ul>
       ) : null}
+
+      <UserForm open={formIsOpen} onOpenChange={setFormIsOpen} />
     </>
   )
 }
